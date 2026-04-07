@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Torn Loadout Viewer</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            padding: 15px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+        }
+
+        #status {
+            margin-top: 10px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .item {
+            background: #1e293b;
+            padding: 15px;
+            margin-top: 12px;
+            border-radius: 12px;
+        }
+
+        .type {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
+        .bonus {
+            color: #34d399;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #facc15;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Torn Loadout Viewer</h1>
+
+<input id="apiKey" placeholder="Enter API Key">
+<input id="userId" placeholder="Enter User ID">
+
+<button onclick="loadData()">Load Equipment</button>
+
+<p id="status"></p>
+
+<div id="items"></div>
+
+<script>
+const allowedTypes = ["Primary", "Secondary", "Melee", "Defensive", "Temporary"];
+
+let cache = {};
+
+async function loadData() {
+    const apiKey = document.getElementById("apiKey").value;
+    const userId = document.getElementById("userId").value;
+    const status = document.getElementById("status");
+    const container = document.getElementById("items");
+
+    container.innerHTML = "";
+    status.innerText = "Loading...";
+
+    const cacheKey = apiKey + "-" + userId;
+
+    if (cache[cacheKey] && (Date.now() - cache[cacheKey].time < 60000)) {
+        status.innerText = "Loaded from cache";
+        displayItems(cache[cacheKey].data);
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://api.torn.com/user/${userId}?selections=equipment&key=${apiKey}`);
+        const data = await res.json();
+
+        const filtered = data.equipment.filter(item =>
+            allowedTypes.includes(item.type)
+        );
+
+        const detailedItems = [];
+
+        for (const item of filtered) {
+            const detailRes = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${apiKey}`);
+            const detailData = await detailRes.json();
+
+            detailedItems.push(detailData.itemdetails);
+
+            await new Promise(r => setTimeout(r, 400));
+        }
+
+        cache[cacheKey] = {
+            data: detailedItems,
+            time: Date.now()
+        };
+
+        status.innerText = "Loaded from API";
+        displayItems(detailedItems);
+
+    } catch (err) {
+        status.innerText = "Error loading data";
+        console.error(err);
+    }
+}
+
+function displayItems(items) {
+    const container = document.getElementById("items");
+
+    items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item";
+
+        let statsHTML = "";
+        let bonusesHTML = "";
+
+        // 🔫 Weapons
+        if (["Primary", "Secondary", "Melee"].includes(item.type)) {
+            statsHTML = `
+                <p><span class="label">Damage:</span> ${item.damage ?? "N/A"}</p>
+                <p><span class="label">Accuracy:</span> ${item.accuracy ?? "N/A"}</p>
+            `;
+        }
+
+        // 🛡️ Armor (UPDATED HERE)
+        if (item.type === "Defensive") {
+            statsHTML = `
+                <p><span class="label">Defense:</span> ${item.armor ?? "N/A"}</p>
+            `;
+        }
+
+        // 💊 Temporary
+        if (item.type === "Temporary") {
+            statsHTML = `<p class="label">Temporary Item</p>`;
+        }
+
+        // 🎯 Bonuses
+        if (item.bonuses) {
+            for (const key in item.bonuses) {
+                const b = item.bonuses[key];
+                bonusesHTML += `<p class="bonus">${b.bonus}: ${b.description}</p>`;
+            }
+        }
+
+        div.innerHTML = `
+            <h2>${item.name}</h2>
+            <p class="type">${item.type}</p>
+            ${statsHTML}
+            <p><span class="label">Quality:</span> ${item.quality}</p>
+            ${bonusesHTML}
+        `;
+
+        container.appendChild(div);
+    });
+}
+</script>
+
+</body>
+</html>
