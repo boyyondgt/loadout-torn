@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Torn Loadout Viewer</title>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
@@ -13,9 +12,7 @@
             padding: 15px;
         }
 
-        h1 {
-            text-align: center;
-        }
+        h1 { text-align: center; }
 
         input, button {
             width: 100%;
@@ -23,18 +20,11 @@
             margin-top: 8px;
             border-radius: 10px;
             border: none;
-            font-size: 16px;
         }
 
         button {
             background: #3b82f6;
             color: white;
-        }
-
-        #status {
-            margin-top: 10px;
-            text-align: center;
-            color: #94a3b8;
         }
 
         .item {
@@ -44,37 +34,53 @@
             border-radius: 12px;
         }
 
-        .type {
-            color: #60a5fa;
-            font-weight: bold;
-        }
-
-        .bonus {
-            color: #34d399;
-        }
-
-        .label {
-            font-weight: bold;
-            color: #facc15;
-        }
+        .type { color: #60a5fa; font-weight: bold; }
+        .bonus { color: #34d399; }
+        .label { font-weight: bold; color: #facc15; }
+        .ammo { color: #f472b6; }
     </style>
 </head>
 <body>
 
 <h1>Torn Loadout Viewer</h1>
 
-<input id="apiKey" placeholder="Enter Minimal access API Key">
-<input id="userId" placeholder="Enter User ID">
-
+<input id="apiKey" placeholder="API Key">
+<input id="userId" placeholder="User ID">
 <button onclick="loadData()">Load Equipment</button>
 
 <p id="status"></p>
-
 <div id="items"></div>
 
 <script>
+// 🔥 Allowed equipment types
 const allowedTypes = ["Primary", "Secondary", "Melee", "Defensive", "Temporary"];
 
+// 🔥 Ammo → Weapon mapping (your data)
+const ammoMap = {
+    "12 Gauge Cartridge": ["Benelli M1 Tactical","Benelli M4 Super","Blunderbuss","Homemade Pocket Shotgun","Ithaca 37","Jackhammer","Mag 7","Nock Gun","Sawed-Off Shotgun"],
+    "9mm Parabellum Round": ["9mm Uzi","BT MP9","Beretta 92FS","Beretta M9","Dual 92G Berettas","Dual MP5s","Dual TMPs","Dual Uzis","Glock 17","Luger","MP 40","MP5 Navy","MP5k","Pink Mac-10","Qsz-92","Skorpion","TMP","Taurus","USP"],
+    ".45 ACP Round": ["Cobra Derringer","Springfield 1911","Thompson"],
+    "7.62mm Rifle Round": ["AK-47","Gold Plated AK-47","PKM","Rheinmetall MG 3","SKS Carbine"],
+    "5.56mm Rifle Round": ["ArmaLite M-15A4","Bushmaster Carbon 15","Dual Bushmasters","Enfield SA-80","Heckler & Koch SL8","M16 A2 Rifle","M249 SAW","M4A1 Colt Carbine","Minigun","Negev NG-5","Neutrilux 2000","Prototype","SIG 550","SIG 552","Steyr AUG","Stoner 96","Tavor TAR-21","Vektor CR-21","XM8 Rifle"],
+    "5.7mm High Vel. Round": ["Dual P90s","Fiveseven","P90","Ruger 57"],
+    "5.45mm Rifle Round": ["AK74U"],
+    ".25 ACP Round": ["Raven MP25"],
+    ".44 Special Round": ["Desert Eagle","Magnum","S&W M29","S&W Revolver"],
+    ".380 ACP Round": ["Beretta Pico","Lorcin 380"],
+    "Warhead": ["SMAW Launcher","Type 98 Anti Tank"],
+    "Snow Ball": ["Snow Cannon"],
+    "Flare": ["Flare Gun"],
+    "Stone": ["Slingshot"],
+    "Bolt": ["Crossbow","Harpoon"],
+    "Dart": ["Blowgun","Tranquilizer Gun"],
+    "Liter of Fuel": ["Flamethrower"],
+    "RPG": ["RPG Launcher"],
+    "40mm Grenade": ["China Lake","Milkor MGL"],
+    "Taser Cartridge": ["Taser"],
+    "Egg": ["Egg Propelled Launcher"]
+};
+
+// 🧠 Cache
 let cache = {};
 
 async function loadData() {
@@ -88,38 +94,50 @@ async function loadData() {
 
     const cacheKey = apiKey + "-" + userId;
 
-    if (cache[cacheKey] && (Date.now() - cache[cacheKey].time < 60000)) {
+    // ✅ Cache check
+    if (cache[cacheKey] && Date.now() - cache[cacheKey].time < 60000) {
         status.innerText = "Loaded from cache";
-        displayItems(cache[cacheKey].data);
+        displayItems(cache[cacheKey].data.items, cache[cacheKey].data.ammo);
         return;
     }
 
     try {
-        const res = await fetch(`https://api.torn.com/user/${userId}?selections=equipment&key=${apiKey}`);
-        const data = await res.json();
+        // 🔹 Equipment
+        const eqRes = await fetch(`https://api.torn.com/user/${userId}?selections=equipment&key=${apiKey}`);
+        const eqData = await eqRes.json();
 
-        const filtered = data.equipment.filter(item =>
+        // 🔹 Ammo
+        const ammoRes = await fetch(`https://api.torn.com/user/${userId}?selections=ammo&key=${apiKey}`);
+        const ammoData = await ammoRes.json();
+
+        const filtered = eqData.equipment.filter(item =>
             allowedTypes.includes(item.type)
         );
 
         const detailedItems = [];
 
+        // 🔹 Get item details
         for (const item of filtered) {
             const detailRes = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${apiKey}`);
             const detailData = await detailRes.json();
 
             detailedItems.push(detailData.itemdetails);
 
+            // ⏱️ Delay
             await new Promise(r => setTimeout(r, 400));
         }
 
+        // 🔥 Equipped ammo list
+        const equippedAmmoList = ammoData.ammo.filter(a => a.equipped === 1);
+
+        // Save cache
         cache[cacheKey] = {
-            data: detailedItems,
+            data: { items: detailedItems, ammo: equippedAmmoList },
             time: Date.now()
         };
 
         status.innerText = "Loaded from API";
-        displayItems(detailedItems);
+        displayItems(detailedItems, equippedAmmoList);
 
     } catch (err) {
         status.innerText = "Error loading data";
@@ -127,7 +145,7 @@ async function loadData() {
     }
 }
 
-function displayItems(items) {
+function displayItems(items, ammoList) {
     const container = document.getElementById("items");
 
     items.forEach(item => {
@@ -136,16 +154,41 @@ function displayItems(items) {
 
         let statsHTML = "";
         let bonusesHTML = "";
+        let ammoHTML = "";
 
         // 🔫 Weapons
-        if (["Primary", "Secondary", "Melee"].includes(item.type)) {
+        if (["Primary", "Secondary"].includes(item.type)) {
+            statsHTML = `
+                <p><span class="label">Damage:</span> ${item.damage ?? "N/A"}</p>
+                <p><span class="label">Accuracy:</span> ${item.accuracy ?? "N/A"}</p>
+            `;
+
+            let matchedAmmo = ammoList.find(a => {
+                const weapons = ammoMap[a.size];
+                return weapons && weapons.includes(item.name);
+            });
+
+            if (matchedAmmo) {
+                ammoHTML = `
+                    <p class="ammo">
+                        <span class="label">Ammo:</span>
+                        ${matchedAmmo.size} (${matchedAmmo.type})
+                    </p>
+                `;
+            } else {
+                ammoHTML = `<p class="ammo">No compatible equipped ammo</p>`;
+            }
+        }
+
+        // 🗡️ Melee
+        if (item.type === "Melee") {
             statsHTML = `
                 <p><span class="label">Damage:</span> ${item.damage ?? "N/A"}</p>
                 <p><span class="label">Accuracy:</span> ${item.accuracy ?? "N/A"}</p>
             `;
         }
 
-        // 🛡️ Armor (UPDATED HERE)
+        // 🛡️ Armor
         if (item.type === "Defensive") {
             statsHTML = `
                 <p><span class="label">Defense:</span> ${item.armor ?? "N/A"}</p>
@@ -169,6 +212,7 @@ function displayItems(items) {
             <h2>${item.name}</h2>
             <p class="type">${item.type}</p>
             ${statsHTML}
+            ${ammoHTML}
             <p><span class="label">Quality:</span> ${item.quality}</p>
             ${bonusesHTML}
         `;
