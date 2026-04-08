@@ -277,9 +277,13 @@
         }
 
         // sort by equipped slot (1,2,3,5) and (6,4,7,9,8) in the order we just pushed
-        offensive.sort((a, b) => a.equipped - b.equipped);
-        defensive.sort((a, b) => a.equipped - b.equipped);
+                offensive.sort((a, b) => a.equipped - b.equipped);
 
+        // V4.2 defensive order: 6=Helmet, 4=Body, 9=Gloves, 7=Pants, 8=Boots
+        defensive.sort((a, b) => {
+          const order = [6, 4, 9, 7, 8];
+          return order.indexOf(a.equipped) - order.indexOf(b.equipped);
+        });
         // now load details and render, in correct order
         for (const item of offensive) {
           const detailResp = await fetch(
