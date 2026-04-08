@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (Cleaner v2)</title>
+  <title>Torn Loadout (Final v3)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -43,20 +43,15 @@
     .ammo { color: #f472b6; margin-top: 4px; }
     .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
     .warning { color: #f87171; font-size: 11px; margin-top: 4px; }
-    .section {
+    .mod-section {
       margin-top: 8px;
       padding-top: 8px;
       border-top: 1px solid rgba(255,255,255,0.1);
     }
-    .section-title {
+    .mod-title {
       color: #facc15;
       font-weight: bold;
       margin-bottom: 4px;
-    }
-    .small {
-      font-size: 12px;
-      color: #cbd5e1;
-      margin-top: 6px;
     }
   </style>
 </head>
@@ -164,23 +159,33 @@
       return ["Ithaca 37", "Blunderbuss", "Homemade Pocket Shotgun", "Nock Gun", "Magnum", "S&W Revolver"].includes(name);
     }
 
-    function getAvailableCategories(weaponType) {
-      return Object.keys(modData).filter(cat => modData[cat].some(m => m.weapons.includes(weaponType)));
-    }
-
-    function getModsForCategory(category, weaponName) {
+    function getFlattenedMods(weaponName) {
       const weaponType = weaponTypes[weaponName];
-      let mods = (modData[category] || []).filter(m => m.weapons.includes(weaponType));
+      const list = [];
 
-      if (isDualWeapon(weaponName) && category === "ExtendedMag") {
-        mods = [];
+      for (const category in modData) {
+        const mods = modData[category];
+
+        let filtered = mods.filter(m => m.weapons.includes(weaponType));
+        if (isDualWeapon(weaponName) && category === "ExtendedMag") {
+          filtered = [];
+        }
+        if (isNoMagWeapon(weaponName) && ["ExtendedMag", "ExtraMag"].includes(category)) {
+          filtered = [];
+        }
+
+        filtered.forEach((m, idx) => {
+          list.push({
+            category,
+            tier: m.tier,
+            name: m.name,
+            effect: m.effect,
+            data: JSON.stringify({ category, index: idx })
+          });
+        });
       }
 
-      if (isNoMagWeapon(weaponName) && ["ExtendedMag", "ExtraMag"].includes(category)) {
-        mods = [];
-      }
-
-      return mods;
+      return list;
     }
 
     function escapeHtml(str) {
@@ -277,21 +282,18 @@
       }
 
       if (["Primary", "Secondary"].includes(sourceItem.type) && weaponType) {
-        const categories = getAvailableCategories(weaponType);
-        if (categories.length) {
-          html += `<div class="section"><div class="section-title">Mods</div>`;
+        const options = getFlattenedMods(sourceItem.name);
+        if (options.length) {
+          html += `<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
 
-          for (const category of categories) {
-            const mods = getModsForCategory(category, sourceItem.name);
-            if (!mods.length) continue;
+          for (let i = 0; i < 2; i++) {
+            html += `<select class="mod-select" data-weapon="${escapeHtml(sourceItem.name)}">`;
+            html += `<option value="">Select mod</option>`;
 
-            html += `<div class="small">${prettyCategory(category)}</div>`;
-            html += `<select class="mod-select" data-category="${escapeHtml(category)}" data-weapon="${escapeHtml(sourceItem.name)}">`;
-            html += `<option value="">Select ${prettyCategory(category)}</option>`;
-
-            mods.forEach((m, idx) => {
-              const value = escapeHtml(JSON.stringify({ index: idx }));
-              html += `<option value="${value}">Tier ${m.tier} — ${m.name}</option>`;
+            options.forEach(opt => {
+              const value = escapeHtml(opt.data);
+              const label = `Tier ${opt.tier} — ${opt.name} (${opt.category})`;
+              html += `<option value="${value}">${label}</option>`;
             });
 
             html += `</select>`;
@@ -321,32 +323,24 @@
             return;
           }
 
-          const category = sel.dataset.category;
           const weaponName = sel.dataset.weapon;
-          const mods = getModsForCategory(category, weaponName);
-          const mod = mods[parsed.index];
+          const category = parsed.category;
+          const index = parsed.index;
+          const mods = modData[category] || [];
+          const mod = mods[index];
 
           if (!mod) {
             box.innerHTML = "";
             return;
           }
 
-          let text = `${mod.name}: ${mod.effect}`;
+          let text = `${mod.name} (${category}): ${mod.effect}`;
           if (isDualWeapon(weaponName)) {
             text += `<div class="warning">Dual weapon: bonus may be halved.</div>`;
           }
           box.innerHTML = text;
         });
       });
-    }
-
-    function prettyCategory(category) {
-      const map = {
-        ExtendedMag: "Extended Magazines",
-        ExtraMag: "Extra Magazines",
-        RecoilPad: "Recoil Pads"
-      };
-      return map[category] || category + "s";
     }
 
     function downloadImage() {
