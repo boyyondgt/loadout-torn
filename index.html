@@ -338,3 +338,17 @@
           const index = parsed.index;
           const mods = modData[category] || [];
           const mod = mods[index];
+
+          if (!mod) {
+            box.innerHTML = "";
+            return;
+          }
+
+          let text = `${mod.name} (${category}): ${mod.effect}`;
+          if (isDualWeapon(weaponName)) {
+            text += `<div class="warning">Dual weapon: bonus may be halved.</div>`;
+          }
+          box.innerHTML = text;
+        });
+      });
+    }
