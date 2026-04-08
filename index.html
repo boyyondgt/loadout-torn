@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V3.3)</title>
+  <title>Torn Loadout (V3.4)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -57,7 +57,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.3)</h1>
+  <h1>Torn Loadout (V3.4)</h1>
 
   <input id="apiKey" placeholder="API Key" />
   <input id="userId" placeholder="User ID" />
@@ -81,7 +81,8 @@
       "Ithaca 37":"Shotgun","Mag 7":"Shotgun",
       "Beretta 92FS":"Pistol","Glock 17":"Pistol","USP":"Pistol",
       "Fiveseven":"Pistol","Desert Eagle":"Pistol",
-      "Flamethrower":"Heavy Artillery","RPG Launcher":"Heavy Artillery"
+      "Flamethrower":"Heavy Artillery","RPG Launcher":"Heavy Artillery",
+      "Taser":"Mechanical"
     };
 
     const ammoMap = {
@@ -93,32 +94,84 @@
       "Liter of Fuel":["Flamethrower"]
     };
 
-    const allowedMods = {
-      "Machine Gun":["Sight","Laser","Extended Mag","Trigger","Brake","Grip"],
-      "Pistol":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
-      "Rifle":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
-      "Shotgun":["Laser","Choke","Trigger","Grip"],
-      "SMG":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
-      "Heavy Artillery":["Laser"]
+    // —————————————————————————————————————————————————
+    // FULL MOD LIST + COMPATIBILITY
+    // (from your notes, already mapped to weapon types)
+    // —————————————————————————————————————————————————
+
+    const modData = {
+      Sight: [
+        { tier: 1, name: "Reflex Sight", effect: "+1.00 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
+        { tier: 2, name: "Holographic Sight", effect: "+1.25 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
+        { tier: 3, name: "Acog Sight", effect: "+1.50 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
+        { tier: 4, name: "Thermal Sight", effect: "+1.75 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
+      ],
+      Laser: [
+        { tier: 1, name: "1mW Laser", effect: "+2% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
+        { tier: 2, name: "5mW Laser", effect: "+3% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
+        { tier: 3, name: "30mW Laser", effect: "+4% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
+        { tier: 4, name: "100mW Laser", effect: "+5% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] }
+      ],
+      Suppressor: [
+        { tier: 1, name: "Small Suppressor", effect: "+3 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] },
+        { tier: 2, name: "Standard Suppressor", effect: "+4 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] },
+        { tier: 3, name: "Large Suppressor", effect: "+5 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] }
+      ],
+      ExtendedMag: [
+        { tier: 1, name: "Extended Mags", effect: "+20% Clip Size", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
+        { tier: 2, name: "High Capacity Mags", effect: "+30% Clip Size", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
+      ],
+      ExtraMag: [
+        { tier: 1, name: "Extra Mag", effect: "One extra mag", weapons: ["Heavy Artillery", "Machine Gun", "Shotgun", "Pistol", "Rifle", "SMG", "Mechanical"] },
+        { tier: 2, name: "Extra Mags x2", effect: "Two extra mags", weapons: ["Heavy Artillery", "Machine Gun", "Shotgun", "Pistol", "Rifle", "SMG", "Mechanical"] }
+      ],
+      Trigger: [
+        { tier: 1, name: "Adjustable Trigger", effect: "+5.00 Accuracy on the first turn", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] },
+        { tier: 2, name: "Hair Trigger", effect: "+7.50 Accuracy on the first turn", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] }
+      ],
+      Mount: [
+        { tier: 1, name: "Bipod", effect: "+1.75 Accuracy, -30% Dexterity", weapons: ["Machine Gun", "Rifle", "Heavy Artillery"] },
+        { tier: 2, name: "Tripod", effect: "+2.00 Accuracy, -30% Dexterity", weapons: ["Machine Gun", "Rifle", "Heavy Artillery"] }
+      ],
+      Grip: [
+        { tier: 1, name: "Custom Grip", effect: "+0.75 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] }
+      ],
+      Choke: [
+        { tier: 1, name: "Skeet Choke", effect: "+6% Damage", weapons: ["Shotgun"] },
+        { tier: 2, name: "Improved Choke", effect: "+8% Damage", weapons: ["Shotgun"] },
+        { tier: 3, name: "Full Choke", effect: "+10% Damage", weapons: ["Shotgun"] }
+      ],
+      RecoilPad: [
+        { tier: 1, name: "Recoil Pad", effect: "25% ammo conservation", weapons: ["Machine Gun", "Rifle", "Shotgun"] }
+      ],
+      Brake: [
+        { tier: 1, name: "Standard Brake", effect: "+1.00 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
+        { tier: 2, name: "Heavy Duty Brake", effect: "+1.25 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
+        { tier: 3, name: "Tactical Brake", effect: "+1.50 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
+      ],
+      Light: [
+        { tier: 1, name: "Small Light", effect: "-3.00 Opponent Accuracy, -2 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] },
+        { tier: 2, name: "Precision Light", effect: "-4.00 Opponent Accuracy, -2.5 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] },
+        { tier: 3, name: "Tactical Illuminator", effect: "-5.00 Opponent Accuracy, -3 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] }
+      ]
     };
 
-    const modStats = {
-      Sight:"+Accuracy",
-      Laser:"+Crit",
-      Suppressor:"+Stealth -DMG",
-      "Extended Mag":"+Mag Size",
-      Trigger:"+Turn1 ACC",
-      Grip:"+Accuracy",
-      Choke:"+Damage",
-      Brake:"+Accuracy -Stealth"
+    const allowedMods = {
+      "Machine Gun":["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Mount", "Grip", "RecoilPad", "Brake", "Light"],
+      "Pistol": ["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Grip", "Brake", "Light"],
+      "Rifle": ["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Mount", "Grip", "RecoilPad", "Brake", "Light"],
+      "Shotgun":["Laser", "ExtraMag", "Trigger", "Grip", "Choke", "RecoilPad", "Light"],
+      "SMG": ["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Grip", "Brake", "Light"],
+      "Heavy Artillery":["Laser", "ExtraMag", "Light"],
+      "Mechanical":["Laser", "ExtraMag", "Light"]
     };
 
     function filterMods(itemName, modsList){
       let filtered=[...modsList];
       if(itemName.toLowerCase().includes("dual"))
-        filtered=filtered.filter(m=>m!=="Extended Mag");
+        filtered=filtered.filter(m=>m!=="ExtendedMag");
       if(["Magnum","S&W Revolver"].includes(itemName))
-        filtered=filtered.filter(m=>m!=="Extended Mag");
+        filtered=filtered.filter(m=>m!=="ExtendedMag");
       return filtered;
     }
 
@@ -210,7 +263,18 @@
     function updateMod(el){
       const val=el.value;
       const box=el.nextElementSibling;
-      box.innerHTML=modStats[val]||"";
+      if(!val){
+        box.innerHTML="";
+        return;
+      }
+      const cat=allowedMods[weaponTypes[el.closest(".item").querySelector("b").innerText.split(" -")[0]] || [];
+      const modEntry=modData[val];
+      if(!modEntry||!modEntry.length){
+        box.innerHTML="";
+        return;
+      }
+      const txt=modEntry[0].name+": "+modEntry[0].effect;
+      box.innerHTML=txt;
     }
 
     function downloadImage(){
