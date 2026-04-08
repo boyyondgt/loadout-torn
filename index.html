@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V4.0)</title>
+  <title>Torn Loadout (V4.1)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -90,7 +90,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V4.0)</h1>
+  <h1>Torn Loadout (V4.1)</h1>
 
   <div id="controls">
     <input id="apiKey" placeholder="API Key" />
@@ -102,15 +102,28 @@
   <p id="status"></p>
 
   <div id="loadout-main">
-    <div id="defensive-col" class="defensive-col">
-      <div class="col-head">Defensive</div>
-    </div>
+    <!-- offensive: left -->
     <div id="offensive-col" class="offensive-col">
       <div class="col-head">Offensive</div>
+    </div>
+    <!-- defensive: right -->
+    <div id="defensive-col" class="defensive-col">
+      <div class="col-head">Defensive</div>
     </div>
   </div>
 
   <script>
+    // EQUIPPED SLOTS (V4.1 order)
+    // Primary:     1
+    // Secondary:   2
+    // Melee:       3
+    // Helmet:      6
+    // Body:        4
+    // Pants:       7
+    // Gloves:      9
+    // Boots:       8
+    // Temporary:   5
+
     const allowedTypes = ["Primary", "Secondary", "Melee", "Defensive", "Temporary"];
 
     const weaponTypes = {
@@ -243,9 +256,37 @@
         ).then(r => r.json());
         const ammo = await fetch(
           `https://api.torn.com/user/${playerId}?selections=ammo&key=${key}`
-        ).then(r => r.json());         for (const item of (eq.equipment || [])) {
+        ).then(r => r.json());
+
+        // V4.1 ORDERING BY SLOT
+        // offensive:  left  → 1=Primary, 2=Secondary, 3=Melee, 5=Temporary
+        // defensive:  right → 6=Helmet, 4=Body, 7=Pants, 9=Gloves, 8=Boots
+
+        // split into two ordered lists
+        const offensive = [];
+        const defensive = [];
+
+        for (const item of (eq.equipment || [])) {
           if (!allowedTypes.includes(item.type)) continue;
 
+          if (item.equipped === 1) offensive.push(item); // Primary
+          if (item.equipped === 2) offensive.push(item); // Secondary
+          if (item.equipped === 3) offensive.push(item); // Melee
+          if (item.equipped === 5) offensive.push(item); // Temporary
+
+          if (item.equipped === 6) defensive.push(item); // Helmet
+          if (item.equipped === 4) defensive.push(item); // Body
+          if (item.equipped === 7) defensive.push(item); // Pants
+          if (item.equipped === 9) defensive.push(item); // Gloves
+          if (item.equipped === 8) defensive.push(item); // Boots
+        }
+
+        // sort by equipped slot (1,2,3,5) and (6,4,7,9,8) in the order we just pushed
+        offensive.sort((a, b) => a.equipped - b.equipped);
+        defensive.sort((a, b) => a.equipped - b.equipped);
+
+        // now load details and render, in correct order
+        for (const item of offensive) {
           const detailResp = await fetch(
             `https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`
           ).then(r => r.json());
@@ -265,7 +306,30 @@
             }
           }
 
-          renderItem(details, matchedAmmo, item.type === "Defensive");
+          renderItem(details, matchedAmmo, false); // offensive → left column
+        }
+
+        for (const item of defensive) {
+          const detailResp = await fetch(
+            `https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`
+          ).then(r => r.json());
+          const details = detailResp.itemdetails || detailResp;
+
+          let matchedAmmo = null;
+          if (ammo && ammo.ammo) {
+            for (const a of ammo.ammo) {
+              if (!a.equipped) continue;
+              for (const type in ammoMap) {
+                if (ammoMap[type].includes(item.name) && a.size === type) {
+                  matchedAmmo = a;
+                  break;
+                }
+              }
+              if (matchedAmmo) break;
+            }
+          }
+
+          renderItem(details, matchedAmmo, true); // defensive → right column
         }
 
         status.innerText = `✅ Loadout loaded for ${name} (ID: ${playerId})`;
@@ -275,7 +339,8 @@
         status.innerText = "Error loading data.";
       }
     }
-
+    // V4.1 – PART 2 starts here
+    // Copy this whole block right after the loadData closing }
     function renderItem(item, ammo, isDefensive) {
       const div = document.createElement("div");
       div.className = "item";
@@ -371,6 +436,8 @@
         link.click();
       });
     }
+    // V4.1 – PART 2 ends here
+    // Paste this directly after loadData } in Part 1
   </script>
 </body>
 </html>
