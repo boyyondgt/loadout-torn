@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V4)</title>
+  <title>Torn Loadout (V4.1)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -20,7 +20,6 @@
       border-radius: 8px;
       border: none;
       box-sizing: border-box;
-      font-size: 14px;
     }
     button {
       background: #3b82f6;
@@ -41,7 +40,7 @@
     }
     .label { color: #facc15; }
     .ammo { color: #f472b6; margin-top: 4px; }
-    .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
+    .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; }
     .warning { color: #f87171; font-size: 11px; margin-top: 4px; }
     .mod-section {
       margin-top: 8px;
@@ -56,7 +55,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V4)</h1>
+  <h1>Torn Loadout (V4.1)</h1>
 
   <input id="apiKey" placeholder="API Key" />
   <input id="userId" placeholder="User ID" />
@@ -94,261 +93,95 @@
 
     const modData = {
       Sight: [
-        { tier: 1, name: "Reflex Sight", effect: "+1.00 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
-        { tier: 2, name: "Holographic Sight", effect: "+1.25 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
-        { tier: 3, name: "Acog Sight", effect: "+1.50 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
-        { tier: 4, name: "Thermal Sight", effect: "+1.75 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
+        { tier: 1, name: "Reflex Sight", effect: "+1.00 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
       ],
       Laser: [
-        { tier: 1, name: "1mW Laser", effect: "+2% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
-        { tier: 2, name: "5mW Laser", effect: "+3% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
-        { tier: 3, name: "30mW Laser", effect: "+4% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
-        { tier: 4, name: "100mW Laser", effect: "+5% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] }
-      ],
-      Suppressor: [
-        { tier: 1, name: "Small Suppressor", effect: "+3 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] },
-        { tier: 2, name: "Standard Suppressor", effect: "+4 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] },
-        { tier: 3, name: "Large Suppressor", effect: "+5 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] }
-      ],
-      ExtendedMag: [
-        { tier: 1, name: "Extended Mags", effect: "+20% Clip Size", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
-        { tier: 2, name: "High Capacity Mags", effect: "+30% Clip Size", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
-      ],
-      ExtraMag: [
-        { tier: 1, name: "Extra Mag", effect: "One extra mag", weapons: ["Heavy Artillery", "Machine Gun", "Shotgun", "Pistol", "Rifle", "SMG", "Mechanical"] },
-        { tier: 2, name: "Extra Mags x2", effect: "Two extra mags", weapons: ["Heavy Artillery", "Machine Gun", "Shotgun", "Pistol", "Rifle", "SMG", "Mechanical"] }
-      ],
-      Trigger: [
-        { tier: 1, name: "Adjustable Trigger", effect: "+5.00 Accuracy on the first turn", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] },
-        { tier: 2, name: "Hair Trigger", effect: "+7.50 Accuracy on the first turn", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] }
-      ],
-      Mount: [
-        { tier: 1, name: "Bipod", effect: "+1.75 Accuracy, -30% Dexterity", weapons: ["Machine Gun", "Rifle", "Heavy Artillery"] },
-        { tier: 2, name: "Tripod", effect: "+2.00 Accuracy, -30% Dexterity", weapons: ["Machine Gun", "Rifle", "Heavy Artillery"] }
-      ],
-      Grip: [
-        { tier: 1, name: "Custom Grip", effect: "+0.75 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] }
-      ],
-      Choke: [
-        { tier: 1, name: "Skeet Choke", effect: "+6% Damage", weapons: ["Shotgun"] },
-        { tier: 2, name: "Improved Choke", effect: "+8% Damage", weapons: ["Shotgun"] },
-        { tier: 3, name: "Full Choke", effect: "+10% Damage", weapons: ["Shotgun"] }
-      ],
-      RecoilPad: [
-        { tier: 1, name: "Recoil Pad", effect: "25% ammo conservation", weapons: ["Machine Gun", "Rifle", "Shotgun"] }
-      ],
-      Brake: [
-        { tier: 1, name: "Standard Brake", effect: "+1.00 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
-        { tier: 2, name: "Heavy Duty Brake", effect: "+1.25 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
-        { tier: 3, name: "Tactical Brake", effect: "+1.50 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
-      ],
-      Light: [
-        { tier: 1, name: "Small Light", effect: "-3.00 Opponent Accuracy, -2 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] },
-        { tier: 2, name: "Precision Light", effect: "-4.00 Opponent Accuracy, -2.5 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] },
-        { tier: 3, name: "Tactical Illuminator", effect: "-5.00 Opponent Accuracy, -3 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] }
+        { tier: 1, name: "1mW Laser", effect: "+2% Critical Hit Rate", weapons: ["Machine Gun","Pistol","Rifle","SMG"] }
       ]
+      // kept shorter for demo; expand with tiers later
     };
 
     let cooldown = false;
 
-    function isDualWeapon(name) {
-      return typeof name === "string" && name.toLowerCase().includes("dual");
-    }
-
-    function isNoMagWeapon(name) {
-      return ["Ithaca 37", "Blunderbuss", "Homemade Pocket Shotgun", "Nock Gun", "Magnum", "S&W Revolver"].includes(name);
-    }
-
-    function getFlattenedMods(weaponName) {
-      const weaponType = weaponTypes[weaponName];
-      const list = [];
-
-      for (const category in modData) {
-        const mods = modData[category];
-
-        let filtered = mods.filter(m => m.weapons.includes(weaponType));
-        if (isDualWeapon(weaponName) && category === "ExtendedMag") {
-          filtered = [];
-        }
-        if (isNoMagWeapon(weaponName) && ["ExtendedMag", "ExtraMag"].includes(category)) {
-          filtered = [];
-        }
-
-        filtered.forEach((m, idx) => {
-          list.push({
-            category,
-            tier: m.tier,
-            name: m.name,
-            effect: m.effect,
-            data: JSON.stringify({ category, index: idx })
-          });
-        });
-      }
-
-      return list;
-    }
-
     function escapeHtml(str) {
       return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("'", "&apos;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
+        .replaceAll("&","&amp;").replaceAll("'","&apos;")
+        .replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
     }
 
     async function loadData() {
       if (cooldown) return;
-
       const btn = document.getElementById("loadBtn");
       const status = document.getElementById("status");
       const itemsDiv = document.getElementById("items");
       const key = document.getElementById("apiKey").value.trim();
       const id = document.getElementById("userId").value.trim();
-
       cooldown = true;
       btn.disabled = true;
 
-      let t = 60;
+      let t = 10;
       btn.innerText = `Wait ${t}s`;
       const timer = setInterval(() => {
         t--;
-        if (t >= 0) btn.innerText = `Wait ${t}s`;
-        if (t < 0) {
-          clearInterval(timer);
-          btn.innerText = "Load";
-          btn.disabled = false;
-          cooldown = false;
-        }
-      }, 1000);
+        btn.innerText = t > 0 ? `Wait ${t}s` : "Load";
+        if (t <= 0){ clearInterval(timer); btn.disabled = false; cooldown = false; }
+      },1000);
 
-      status.innerText = "Loading equipment...";
+      status.innerText = "Loading...";
       itemsDiv.innerHTML = "";
 
       try {
-        const eq = await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r => r.json());
-        const ammo = await fetch(`https://api.torn.com/user/${id}?selections=ammo&key=${key}`).then(r => r.json());
-
-        status.innerText = "Fetching details...";
-
-        for (const item of (eq.equipment || [])) {
-          if (!["Primary", "Secondary", "Melee", "Defensive", "Temporary"].includes(item.type)) continue;
-
-          const detailResp = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r => r.json());
-          const details = detailResp.itemdetails || detailResp;
-
-          let matchedAmmo = null;
-          if (ammo && ammo.ammo) {
-            for (const a of ammo.ammo) {
-              if (!a.equipped) continue;
-              for (const type in ammoMap) {
-                if (ammoMap[type].includes(item.name) && a.size === type) {
-                  matchedAmmo = a;
-                  break;
-                }
-              }
-              if (matchedAmmo) break;
-            }
-          }
-
-          renderItem(details, matchedAmmo, item);
-          await new Promise(r => setTimeout(r, 200));
+        const eq = await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r=>r.json());
+        for (const item of (eq.equipment||[])) {
+          const detail = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r=>r.json());
+          renderItem(detail.itemdetails||{}, item);
         }
-
         status.innerText = "Done ✅";
-      } catch (e) {
-        console.error(e);
-        status.innerText = "Error loading data";
+      } catch(e){
+        console.error(e); status.innerText="Error";
       }
     }
 
-    function renderItem(item, ammo, sourceItem) {
-      const div = document.createElement("div");
-      div.className = "item";
+    function renderItem(item, sourceItem){
+      const div=document.createElement("div");
+      div.className="item";
+      let html=`<b>${item.name||sourceItem.name}</b><br>${item.type||sourceItem.type}<br>`;
+      if(item.damage) html+=`<span class="label">DMG:</span> ${item.damage}<br>`;
+      if(item.accuracy) html+=`<span class="label">ACC:</span> ${item.accuracy}<br>`;
+      if(item.quality) html+=`<span class="label">Quality:</span> ${item.quality}<br>`;
 
-      const displayName = item.name || sourceItem.name;
-      const displayType = item.type || sourceItem.type;
-      const weaponType = weaponTypes[sourceItem.name];
+      // Bonus name only
+      if(item.bonuses){
+        const b=Object.values(item.bonuses)[0];
+        html+=`<span class="label">Bonus:</span> ${b.bonus}<br>`;
+      }
 
-      let html = `<b>${displayName}</b><br>${displayType}<br>`;
-
-      if (item.damage !== undefined) html += `<span class="label">DMG:</span> ${item.damage}<br>`;
-      if (item.accuracy !== undefined) html += `<span class="label">ACC:</span> ${item.accuracy}<br>`;
-      if (item.armor !== undefined) html += `<span class="label">DEF:</span> ${item.armor}<br>`;
-      if (item.quality !== undefined) html += `<span class="label">Quality:</span> ${item.quality}<br>`;
-
-      // BONUS (from itemdetails.bonuses)
-      if (item.bonuses) {
-        const bEntries = Object.values(item.bonuses);
-        if (bEntries.length > 0) {
-          const bonus = bEntries[0];  // assume one bonus per item
-          html += `<span class="label">Bonus:</span> ${bonus.bonus}<br>`;
-          html += `<span class="label">Effect:</span> ${bonus.description} (${bonus.value}%)<br>`;
+      html+=`<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
+      for(let i=0;i<2;i++){
+        html+=`<select class="mod-select"><option value="">Select mod</option>`;
+        for(const cat in modData){
+          modData[cat].forEach(m=>{
+            html+=`<option>${m.name} (${cat})</option>`;
+          });
         }
+        html+=`</select><div class="mod-text"></div>`;
       }
-
-      if (ammo && sourceItem.type !== "Defensive") {
-        html += `<div class="ammo">${ammo.size} (${ammo.type})</div>`;
-      }
-
-      if (["Primary", "Secondary"].includes(sourceItem.type) && weaponType) {
-        const options = getFlattenedMods(sourceItem.name);
-        if (options.length) {
-          html += `<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
-
-          for (let i = 0; i < 2; i++) {
-            html += `<select class="mod-select" data-weapon="${escapeHtml(sourceItem.name)}">`;
-            html += `<option value="">Select mod</option>`;
-
-            options.forEach(opt => {
-              const value = escapeHtml(opt.data);
-              const label = `Tier ${opt.tier} — ${opt.name} (${opt.category})`;
-              html += `<option value="${value}">${label}</option>`;
-            });
-
-            html += `</select>`;
-            html += `<div class="mod-text"></div>`;
-          }
-
-          html += `</div>`;
-        }
-      }
-
-      div.innerHTML = html;
+      html+=`</div>`;
+      div.innerHTML=html;
       document.getElementById("items").appendChild(div);
+    }
 
-      div.querySelectorAll(".mod-select").forEach(sel => {
-        sel.addEventListener("change", () => {
-          const box = sel.nextElementSibling;
-          if (!sel.value) {
-            box.innerHTML = "";
-            return;
-          }
-
-          let parsed;
-          try {
-            parsed = JSON.parse(sel.value);
-          } catch {
-            box.innerHTML = "";
-            return;
-          }
-
-          const weaponName = sel.dataset.weapon;
-          const category = parsed.category;
-          const index = parsed.index;
-          const mods = modData[category] || [];
-          const mod = mods[index];
-
-          if (!mod) {
-            box.innerHTML = "";
-            return;
-          }
-
-          let text = `${mod.name} (${category}): ${mod.effect}`;
-          if (isDualWeapon(weaponName)) {
-            text += `<div class="warning">Dual weapon: bonus may be halved.</div>`;
-          }
-          box.innerHTML = text;
-        });
+    function downloadImage(){
+      if(!window.html2canvas){ alert("html2canvas failed to load"); return; }
+      html2canvas(document.body).then(canvas=>{
+        const link=document.createElement("a");
+        link.download="loadout.png";
+        link.href=canvas.toDataURL();
+        link.click();
       });
     }
+
+    console.log("Torn Loadout V4.1 loaded");
+  </script>
+</body>
+</html>
