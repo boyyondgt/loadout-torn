@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V3.8)</title>
+  <title>Torn Loadout (V3.9)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -30,6 +30,25 @@
     #controls {
       margin-bottom: 12px;
     }
+    #loadout-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .col-head {
+      color: #facc15;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .defensive-col, .offensive-col {
+      background: #1e293b;
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
+    .defensive-col > .item,
+    .offensive-col > .item {
+      margin-top: 8px;
+    }
     .item {
       background: #1e293b;
       padding: 10px;
@@ -55,7 +74,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.8)</h1>
+  <h1>Torn Loadout (V3.9)</h1>
 
   <div id="controls">
     <input id="apiKey" placeholder="API Key" />
@@ -66,8 +85,14 @@
   <button id="screenshotBtn" onclick="downloadImage()">📸 Screenshot (loadout only)</button>
 
   <p id="status"></p>
+
   <div id="loadout-main">
-    <div id="items"></div>
+    <div id="defensive-col" class="defensive-col">
+      <div class="col-head">Defensive</div>
+    </div>
+    <div id="offensive-col" class="offensive-col">
+      <div class="col-head">Offensive</div>
+    </div>
   </div>
 
   <script>
@@ -176,10 +201,12 @@
       const key=document.getElementById("apiKey").value.trim();
       const id=document.getElementById("userId").value.trim();
       const status=document.getElementById("status");
-      const itemsDiv=document.getElementById("items");
+      const defDiv=document.getElementById("defensive-col");
+      const ofDiv=document.getElementById("offensive-col");
 
       status.innerText="Loading...";
-      itemsDiv.innerHTML="";
+      defDiv.innerHTML="<div class='col-head'>Defensive</div>";
+      ofDiv.innerHTML="<div class='col-head'>Offensive</div>";
 
       try{
         const eq=await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r=>r.json());
@@ -204,7 +231,7 @@
             }
           }
 
-          renderItem(details, matchedAmmo);
+          renderItem(details, matchedAmmo, item.type === "Defensive");
         }
 
         status.innerText="Done ✅";
@@ -214,7 +241,7 @@
       }
     }
 
-    function renderItem(item, ammo){
+    function renderItem(item, ammo, isDefensive){
       const div=document.createElement("div");
       div.className="item";
       let html=`<b>${item.name}</b><br>${item.type}<br>`;
@@ -273,7 +300,12 @@
       }
 
       div.innerHTML=html;
-      document.getElementById("items").appendChild(div);
+
+      if(isDefensive){
+        document.getElementById("defensive-col").appendChild(div);
+      } else {
+        document.getElementById("offensive-col").appendChild(div);
+      }
     }
 
     function updateMod(el){
