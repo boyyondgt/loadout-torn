@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V3.6)</title>
+  <title>Torn Loadout (V3.7)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -52,7 +52,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.6)</h1>
+  <h1>Torn Loadout (V3.7)</h1>
 
   <input id="apiKey" placeholder="API Key" />
   <input id="userId" placeholder="User ID" />
@@ -86,6 +86,7 @@
       "7.62mm Rifle Round":["AK-47","SKS Carbine"],
       "12 Gauge Cartridge":["Benelli M1 Tactical","Benelli M4 Super","Ithaca 37","Mag 7"],
       "5.7mm High Vel. Round":["P90","Fiveseven"],
+      "Dart":["Blowgun"],
       "Liter of Fuel":["Flamethrower"]
     };
 
@@ -150,6 +151,20 @@
       ]
     };
 
+    // weapons that never get ANY mod slot
+    const noModWeapons = [
+      "Blowgun"
+    ];
+
+    // weapons that cannot take magazines (no ExtendedMag / ExtraMag)
+    const noMagWeapons = [
+      "Ithaca 37",
+      "Blunderbuss",
+      "Homemade Pocket Shotgun",
+      "Magnum",
+      "S&W Revolver"
+    ];
+
     async function loadData(){
       const key=document.getElementById("apiKey").value.trim();
       const id=document.getElementById("userId").value.trim();
@@ -212,8 +227,15 @@
 
       if(ammo) html+=`<div class="ammo">${ammo.size} (${ammo.type})</div>`;
 
-      if(["Primary","Secondary"].includes(item.type)){
-        const wType=weaponTypes[item.name];
+      const wn = item.name;
+      const wType = weaponTypes[wn];
+
+      // skip mod section for explicit no‑mod weapons (e.g. Blowgun)
+      if(noModWeapons.includes(wn)) {
+        // do nothing, no mods
+      } else
+      // show mod section only for Primary/Secondary
+      if(["Primary","Secondary"].includes(item.type) && wType){
         html+=`<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
 
         for(let i=0;i<2;i++){
@@ -223,14 +245,21 @@
           for(const cat in modData){
             const mods=modData[cat];
             if(!mods.some(m=>m.weapons.includes(wType))) continue;
+
             mods.forEach((m,idx)=>{
               const value=`${cat}:${idx}`;
               const label=`${cat} | Tier ${m.tier} — ${m.name} (${m.effect})`;
-              html+=`<option value="${value}">${label}</option>`;
+
+              // remove ExtendedMag / ExtraMag if this is a no‑mag weapon
+              if(noMagWeapons.includes(wn) && (cat === "ExtendedMag" || cat === "ExtraMag")){
+                // skip this option
+              } else {
+                html+=`<option value="${value}">${label}</option>`;
+              }
             });
           }
 
-          html+=`</select><div class="mod-text"></div>`; 
+          html+=`</select><div class="mod-text"></div>`;
         }
 
         html+=`</div>`;
