@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V3.9)</title>
+  <title>Torn Loadout (V4.0)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -12,7 +12,9 @@
       color: white;
       padding: 8px;
     }
-    h1 { text-align: center; }
+    h1 {
+      text-align: center;
+    }
     input, button, select {
       width: 100%;
       padding: 8px;
@@ -57,10 +59,24 @@
       font-size: 13px;
       line-height: 1.45;
     }
-    .label { color: #facc15; }
-    .ammo { color: #f472b6; margin-top: 4px; }
-    .bonus { color: #4ade80; font-size: 12px; margin-top: 4px; }
-    .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
+    .label {
+      color: #facc15;
+    }
+    .ammo {
+      color: #f472b6;
+      margin-top: 4px;
+    }
+    .bonus {
+      color: #4ade80;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .mod-text {
+      color: #38bdf8;
+      font-size: 12px;
+      margin-top: 4px;
+      white-space: pre-wrap;
+    }
     .mod-section {
       margin-top: 8px;
       padding-top: 8px;
@@ -74,11 +90,10 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.9)</h1>
+  <h1>Torn Loadout (V4.0)</h1>
 
   <div id="controls">
-    <input id="apiKey" placeholder="Minimal Access API Key" />
-    <input id="userId" placeholder="User ID" />
+    <input id="apiKey" placeholder="API Key" />
     <button id="loadBtn" onclick="loadData()">Load</button>
   </div>
 
@@ -121,10 +136,6 @@
       "Dart":["Blowgun"],
       "Liter of Fuel":["Flamethrower"]
     };
-
-    // ———————————————————
-    // FULL MOD LIST + TIERED NAMES
-    // ———————————————————
 
     const modData = {
       Sight: [
@@ -183,12 +194,10 @@
       ]
     };
 
-    // weapons that never get ANY mod slot
     const noModWeapons = [
       "Blowgun"
     ];
 
-    // weapons that cannot take magazines (no ExtendedMag / ExtraMag)
     const noMagWeapons = [
       "Ithaca 37",
       "Blunderbuss",
@@ -197,142 +206,168 @@
       "S&W Revolver"
     ];
 
-    async function loadData(){
-      const key=document.getElementById("apiKey").value.trim();
-      const id=document.getElementById("userId").value.trim();
-      const status=document.getElementById("status");
-      const defDiv=document.getElementById("defensive-col");
-      const ofDiv=document.getElementById("offensive-col");
+    async function loadData() {
+      const key = document.getElementById("apiKey").value.trim();
+      const status = document.getElementById("status");
+      const defDiv  = document.getElementById("defensive-col");
+      const ofDiv   = document.getElementById("offensive-col");
 
-      status.innerText="Loading...";
-      defDiv.innerHTML="<div class='col-head'>Defensive</div>";
-      ofDiv.innerHTML="<div class='col-head'>Offensive</div>";
+      if (!key) {
+        status.innerText = "Please enter an API key.";
+        return;
+      }
 
-      try{
-        const eq=await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r=>r.json());
-        const ammo=await fetch(`https://api.torn.com/user/${id}?selections=ammo&key=${key}`).then(r=>r.json());
+      status.innerText = "Validating key & fetching your ID...";
+      defDiv.innerHTML  = "<div class='col-head'>Defensive</div>";
+      ofDiv.innerHTML   = "<div class='col-head'>Offensive</div>";
 
-        for(const item of (eq.equipment||[])){
-          if(!allowedTypes.includes(item.type)) continue;
+      try {
+        // 1) get ID directly from basic + key
+        const basic = await fetch(
+          `https://api.torn.com/user/?selections=basic&key=${key}&comment=TryItPage`
+        ).then(r => r.json());
 
-          const detailResp=await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r=>r.json());
-          const details=detailResp.itemdetails || detailResp;
+        if (!basic.player_id || !basic.name) {
+          status.innerText = "Invalid key or missing basic data.";
+          return;
+        }
 
-          let matchedAmmo=null;
-          if(ammo && ammo.ammo){
-            for(const a of ammo.ammo){
-              if(!a.equipped) continue;
-              for(const type in ammoMap){
-                if(ammoMap[type].includes(item.name)&&a.size===type){
-                  matchedAmmo=a; break;
+        const playerId = basic.player_id;
+        const name     = basic.name;
+
+        status.innerText = `Loading loadout for ${name} (ID: ${playerId})...`;
+
+        // 2) fetch equipment for that ID using the same key
+        const eq   = await fetch(
+          `https://api.torn.com/user/${playerId}?selections=equipment&key=${key}`
+        ).then(r => r.json());
+        const ammo = await fetch(
+          `https://api.torn.com/user/${playerId}?selections=ammo&key=${key}`
+        ).then(r => r.json());         for (const item of (eq.equipment || [])) {
+          if (!allowedTypes.includes(item.type)) continue;
+
+          const detailResp = await fetch(
+            `https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`
+          ).then(r => r.json());
+          const details = detailResp.itemdetails || detailResp;
+
+          let matchedAmmo = null;
+          if (ammo && ammo.ammo) {
+            for (const a of ammo.ammo) {
+              if (!a.equipped) continue;
+              for (const type in ammoMap) {
+                if (ammoMap[type].includes(item.name) && a.size === type) {
+                  matchedAmmo = a;
+                  break;
                 }
               }
-              if(matchedAmmo) break;
+              if (matchedAmmo) break;
             }
           }
 
           renderItem(details, matchedAmmo, item.type === "Defensive");
         }
 
-        status.innerText="Done ✅";
-      }catch(e){
-        console.error(e);
-        status.innerText="Error loading data.";
+        status.innerText = `✅ Loadout loaded for ${name} (ID: ${playerId})`;
+
+      } catch (e) {
+        console.error("loadData error:", e);
+        status.innerText = "Error loading data.";
       }
     }
 
-    function renderItem(item, ammo, isDefensive){
-      const div=document.createElement("div");
-      div.className="item";
-      let html=`<b>${item.name}</b><br>${item.type}<br>`;
+    function renderItem(item, ammo, isDefensive) {
+      const div = document.createElement("div");
+      div.className = "item";
+      let html = `<b>${item.name}</b><br>${item.type}<br>`;
 
-      if(item.damage) html+=`<span class="label">DMG:</span> ${item.damage}<br>`;
-      if(item.accuracy) html+=`<span class="label">ACC:</span> ${item.accuracy}<br>`;
-      if(item.armor) html+=`<span class="label">DEF:</span> ${item.armor}<br>`;
-      if(item.quality!==undefined) html+=`<span class="label">Quality:</span> ${item.quality}<br>`;
+      if (item.damage) html += `<span class="label">DMG:</span> ${item.damage}<br>`;
+      if (item.accuracy) html += `<span class="label">ACC:</span> ${item.accuracy}<br>`;
+      if (item.armor) html += `<span class="label">DEF:</span> ${item.armor}<br>`;
+      if (item.quality !== undefined)
+        html += `<span class="label">Quality:</span> ${item.quality}<br>`;
 
-      if(item.bonuses){
+      if (item.bonuses) {
         const bonusList = Object.values(item.bonuses);
-        if(bonusList.length){
+        if (bonusList.length) {
           const b = bonusList[0];
           html += `<div class="bonus"><b>Bonus:</b> ${b.bonus}<br>${b.description} (${b.value}%)</div>`;
         }
       }
 
-      if(ammo) html+=`<div class="ammo">${ammo.size} (${ammo.type})</div>`;
+      if (ammo)
+        html += `<div class="ammo">${ammo.size} (${ammo.type})</div>`;
 
-      const wn = item.name;
+      const wn    = item.name;
       const wType = weaponTypes[wn];
 
-      // skip mod section for explicit no‑mod weapons (e.g. Blowgun)
-      if(noModWeapons.includes(wn)) {
-        // do nothing, no mods
-      } else
-      // show mod section only for Primary/Secondary
-      if(["Primary","Secondary"].includes(item.type) && wType){
-        html+=`<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
+      if (noModWeapons.includes(wn)) {
+        // no mod section at all
+      } else if (["Primary", "Secondary"].includes(item.type) && wType) {
+        html += `<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
 
-        for(let i=0;i<2;i++){
-          html+=`<select class="mod-select" onchange="updateMod(this)">
+        for (let i = 0; i < 2; i++) {
+          html += `<select class="mod-select" onchange="updateMod(this)">
             <option value="">Select mod</option>`;
 
-          for(const cat in modData){
-            const mods=modData[cat];
-            if(!mods.some(m=>m.weapons.includes(wType))) continue;
+          for (const cat in modData) {
+            const mods = modData[cat];
+            if (!mods.some(m => m.weapons.includes(wType))) continue;
 
-            mods.forEach((m,idx)=>{
-              const value=`${cat}:${idx}`;
-              const label=`${cat} | Tier ${m.tier} — ${m.name} (${m.effect})`;
+            mods.forEach((m, idx) => {
+              const value = `${cat}:${idx}`;
+              const label = `${cat} | Tier ${m.tier} — ${m.name} (${m.effect})`;
 
-              // remove ExtendedMag / ExtraMag if this is a no‑mag weapon
-              if(noMagWeapons.includes(wn) && (cat === "ExtendedMag" || cat === "ExtraMag")){
-                // skip this option
+              if (noMagWeapons.includes(wn) && (cat === "ExtendedMag" || cat === "ExtraMag")) {
+                // skip magazine mods
               } else {
-                html+=`<option value="${value}">${label}</option>`;
+                html += `<option value="${value}">${label}</option>`;
               }
             });
           }
 
-          html+=`</select><div class="mod-text"></div>`;
+          html += `</select><div class="mod-text"></div>`;
         }
 
-        html+=`</div>`;
+        html += `</div>`;
       }
 
-      div.innerHTML=html;
+      div.innerHTML = html;
 
-      if(isDefensive){
+      if (isDefensive)
         document.getElementById("defensive-col").appendChild(div);
-      } else {
+      else
         document.getElementById("offensive-col").appendChild(div);
-      }
     }
 
-    function updateMod(el){
-      const val=el.value;
-      const box=el.nextElementSibling;
-      if(!val){
-        box.innerHTML="";
+    function updateMod(el) {
+      const val  = el.value;
+      const box  = el.nextElementSibling;
+      if (!val) {
+        box.innerHTML = "";
         return;
       }
-      const [cat,idxStr]=val.split(":");
-      const idx=parseInt(idxStr,10);
-      const list=modData[cat]||[];
-      const mod=list[idx];
-      if(!mod){
-        box.innerHTML="";
+
+      const [cat, idxStr] = val.split(":");
+      const idx           = parseInt(idxStr, 10);
+      const list          = modData[cat] || [];
+      const mod           = list[idx];
+
+      if (!mod) {
+        box.innerHTML = "";
         return;
       }
-      const txt=`${mod.name} (${mod.effect})`;
-      box.innerHTML=txt;
+
+      const txt = `${mod.name} (${mod.effect})`;
+      box.innerHTML = txt;
     }
 
-    function downloadImage(){
+    function downloadImage() {
       const el = document.getElementById("loadout-main");
-      html2canvas(el).then(canvas=>{
-        const link=document.createElement("a");
-        link.download="loadout.png";
-        link.href=canvas.toDataURL("image/png");
+      html2canvas(el).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "loadout.png";
+        link.href = canvas.toDataURL("image/png");
         link.click();
       });
     }
