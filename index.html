@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V3.4)</title>
+  <title>Torn Loadout (V3.5)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -26,10 +26,6 @@
       background: #3b82f6;
       color: white;
       cursor: pointer;
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
     .item {
       background: #1e293b;
@@ -57,7 +53,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.4)</h1>
+  <h1>Torn Loadout (V3.5)</h1>
 
   <input id="apiKey" placeholder="API Key" />
   <input id="userId" placeholder="User ID" />
@@ -93,11 +89,6 @@
       "5.7mm High Vel. Round":["P90","Fiveseven"],
       "Liter of Fuel":["Flamethrower"]
     };
-
-    // —————————————————————————————————————————————————
-    // FULL MOD LIST + COMPATIBILITY
-    // (from your notes, already mapped to weapon types)
-    // —————————————————————————————————————————————————
 
     const modData = {
       Sight: [
@@ -180,8 +171,7 @@
       const id=document.getElementById("userId").value.trim();
       const status=document.getElementById("status");
       const itemsDiv=document.getElementById("items");
-      const btn=document.getElementById("loadBtn");
-      btn.disabled=true;
+
       status.innerText="Loading...";
       itemsDiv.innerHTML="";
 
@@ -209,7 +199,7 @@
           }
 
           renderItem(details, matchedAmmo);
-          await new Promise(r=>setTimeout(r,300));
+          // no delay, no disabled button
         }
 
         status.innerText="Done ✅";
@@ -217,7 +207,6 @@
         console.error(e);
         status.innerText="Error loading data.";
       }
-      btn.disabled=false;
     }
 
     function renderItem(item, ammo){
@@ -267,14 +256,12 @@
         box.innerHTML="";
         return;
       }
-      const cat=allowedMods[weaponTypes[el.closest(".item").querySelector("b").innerText.split(" -")[0]] || [];
-      const modEntry=modData[val];
-      if(!modEntry||!modEntry.length){
-        box.innerHTML="";
-        return;
-      }
-      const txt=modEntry[0].name+": "+modEntry[0].effect;
-      box.innerHTML=txt;
+      const parent=el.closest(".item");
+      const name=parent.querySelector("b").innerText;
+      const wType=weaponTypes[name];
+      const modList=modData[val]||[];
+      const mod=modList.length?modList[0]:null;
+      box.innerHTML=mod? `${mod.name}: ${mod.effect}` : "";
     }
 
     function downloadImage(){
