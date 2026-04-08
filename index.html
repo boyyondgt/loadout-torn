@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V3.5)</title>
+  <title>Torn Loadout (V3.6)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -39,7 +39,6 @@
     .ammo { color: #f472b6; margin-top: 4px; }
     .bonus { color: #4ade80; font-size: 12px; margin-top: 4px; }
     .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
-    .warning { color: #f87171; font-size: 11px; margin-top: 4px; }
     .mod-section {
       margin-top: 8px;
       padding-top: 8px;
@@ -53,7 +52,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.5)</h1>
+  <h1>Torn Loadout (V3.6)</h1>
 
   <input id="apiKey" placeholder="API Key" />
   <input id="userId" placeholder="User ID" />
@@ -89,6 +88,10 @@
       "5.7mm High Vel. Round":["P90","Fiveseven"],
       "Liter of Fuel":["Flamethrower"]
     };
+
+    // ———————————————————
+    // FULL MOD LIST + TIERED NAMES
+    // ———————————————————
 
     const modData = {
       Sight: [
@@ -147,25 +150,6 @@
       ]
     };
 
-    const allowedMods = {
-      "Machine Gun":["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Mount", "Grip", "RecoilPad", "Brake", "Light"],
-      "Pistol": ["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Grip", "Brake", "Light"],
-      "Rifle": ["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Mount", "Grip", "RecoilPad", "Brake", "Light"],
-      "Shotgun":["Laser", "ExtraMag", "Trigger", "Grip", "Choke", "RecoilPad", "Light"],
-      "SMG": ["Sight", "Laser", "Suppressor", "ExtendedMag", "ExtraMag", "Trigger", "Grip", "Brake", "Light"],
-      "Heavy Artillery":["Laser", "ExtraMag", "Light"],
-      "Mechanical":["Laser", "ExtraMag", "Light"]
-    };
-
-    function filterMods(itemName, modsList){
-      let filtered=[...modsList];
-      if(itemName.toLowerCase().includes("dual"))
-        filtered=filtered.filter(m=>m!=="ExtendedMag");
-      if(["Magnum","S&W Revolver"].includes(itemName))
-        filtered=filtered.filter(m=>m!=="ExtendedMag");
-      return filtered;
-    }
-
     async function loadData(){
       const key=document.getElementById("apiKey").value.trim();
       const id=document.getElementById("userId").value.trim();
@@ -199,7 +183,6 @@
           }
 
           renderItem(details, matchedAmmo);
-          // no delay, no disabled button
         }
 
         status.innerText="Done ✅";
@@ -231,18 +214,26 @@
 
       if(["Primary","Secondary"].includes(item.type)){
         const wType=weaponTypes[item.name];
-        if(wType && allowedMods[wType]){
-          const mods=filterMods(item.name,allowedMods[wType]);
-          html+=`<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
-          for(let i=0;i<2;i++){
-            html+=`<select class="mod-select" onchange="updateMod(this)">
-              <option value="">Select Mod</option>
-              ${mods.map(m=>`<option>${m}</option>`).join("")}
-            </select>
-            <div class="mod-text"></div>`;
+        html+=`<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
+
+        for(let i=0;i<2;i++){
+          html+=`<select class="mod-select" onchange="updateMod(this)">
+            <option value="">Select mod</option>`;
+
+          for(const cat in modData){
+            const mods=modData[cat];
+            if(!mods.some(m=>m.weapons.includes(wType))) continue;
+            mods.forEach((m,idx)=>{
+              const value=`${cat}:${idx}`;
+              const label=`${cat} | Tier ${m.tier} — ${m.name} (${m.effect})`;
+              html+=`<option value="${value}">${label}</option>`;
+            });
           }
-          html+=`</div>`;
+
+          html+=`</select><div class="mod-text"></div>`; 
         }
+
+        html+=`</div>`;
       }
 
       div.innerHTML=html;
@@ -256,12 +247,16 @@
         box.innerHTML="";
         return;
       }
-      const parent=el.closest(".item");
-      const name=parent.querySelector("b").innerText;
-      const wType=weaponTypes[name];
-      const modList=modData[val]||[];
-      const mod=modList.length?modList[0]:null;
-      box.innerHTML=mod? `${mod.name}: ${mod.effect}` : "";
+      const [cat,idxStr]=val.split(":");
+      const idx=parseInt(idxStr,10);
+      const list=modData[cat]||[];
+      const mod=list[idx];
+      if(!mod){
+        box.innerHTML="";
+        return;
+      }
+      const txt=`${mod.name} (${mod.effect})`;
+      box.innerHTML=txt;
     }
 
     function downloadImage(){
