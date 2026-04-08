@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (Fixed)</title>
+  <title>Torn Loadout (Cleaner v2)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -20,6 +20,7 @@
       border-radius: 8px;
       border: none;
       box-sizing: border-box;
+      font-size: 14px;
     }
     button {
       background: #3b82f6;
@@ -40,14 +41,14 @@
     }
     .label { color: #facc15; }
     .ammo { color: #f472b6; margin-top: 4px; }
-    .mod { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
+    .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
     .warning { color: #f87171; font-size: 11px; margin-top: 4px; }
-    .mod-group {
+    .section {
       margin-top: 8px;
       padding-top: 8px;
       border-top: 1px solid rgba(255,255,255,0.1);
     }
-    .mod-title {
+    .section-title {
       color: #facc15;
       font-weight: bold;
       margin-bottom: 4px;
@@ -55,6 +56,7 @@
     .small {
       font-size: 12px;
       color: #cbd5e1;
+      margin-top: 6px;
     }
   </style>
 </head>
@@ -74,18 +76,13 @@
     const weaponTypes = {
       "9mm Uzi":"SMG","AK74U":"SMG","P90":"SMG","MP5 Navy":"SMG","MP5k":"SMG",
       "Skorpion":"SMG","TMP":"SMG","BT MP9":"SMG",
-
       "AK-47":"Rifle","M4A1 Colt Carbine":"Rifle","SIG 550":"Rifle",
       "SIG 552":"Rifle","XM8 Rifle":"Rifle","SKS Carbine":"Rifle",
-
       "M249 SAW":"Machine Gun","Minigun":"Machine Gun","PKM":"Machine Gun",
-
       "Benelli M1 Tactical":"Shotgun","Benelli M4 Super":"Shotgun",
       "Ithaca 37":"Shotgun","Mag 7":"Shotgun",
-
       "Beretta 92FS":"Pistol","Glock 17":"Pistol","USP":"Pistol",
       "Fiveseven":"Pistol","Desert Eagle":"Pistol",
-
       "Flamethrower":"Heavy Artillery","RPG Launcher":"Heavy Artillery",
       "Taser":"Mechanical"
     };
@@ -101,56 +98,56 @@
     };
 
     const modData = {
-      "Sight": [
+      Sight: [
         { tier: 1, name: "Reflex Sight", effect: "+1.00 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
         { tier: 2, name: "Holographic Sight", effect: "+1.25 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
         { tier: 3, name: "Acog Sight", effect: "+1.50 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
         { tier: 4, name: "Thermal Sight", effect: "+1.75 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
       ],
-      "Laser": [
+      Laser: [
         { tier: 1, name: "1mW Laser", effect: "+2% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
         { tier: 2, name: "5mW Laser", effect: "+3% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
         { tier: 3, name: "30mW Laser", effect: "+4% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] },
         { tier: 4, name: "100mW Laser", effect: "+5% Critical Hit Rate", weapons: ["Machine Gun", "Pistol", "Rifle", "Heavy Artillery", "Shotgun", "SMG", "Mechanical"] }
       ],
-      "Suppressor": [
+      Suppressor: [
         { tier: 1, name: "Small Suppressor", effect: "+3 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] },
         { tier: 2, name: "Standard Suppressor", effect: "+4 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] },
         { tier: 3, name: "Large Suppressor", effect: "+5 Stealth, -5% Damage", weapons: ["Pistol", "Rifle", "SMG"] }
       ],
-      "Extended Mag": [
+      ExtendedMag: [
         { tier: 1, name: "Extended Mags", effect: "+20% Clip Size", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
         { tier: 2, name: "High Capacity Mags", effect: "+30% Clip Size", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
       ],
-      "Extra Mag": [
+      ExtraMag: [
         { tier: 1, name: "Extra Mag", effect: "One extra mag", weapons: ["Heavy Artillery", "Machine Gun", "Shotgun", "Pistol", "Rifle", "SMG", "Mechanical"] },
         { tier: 2, name: "Extra Mags x2", effect: "Two extra mags", weapons: ["Heavy Artillery", "Machine Gun", "Shotgun", "Pistol", "Rifle", "SMG", "Mechanical"] }
       ],
-      "Trigger": [
+      Trigger: [
         { tier: 1, name: "Adjustable Trigger", effect: "+5.00 Accuracy on the first turn", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] },
         { tier: 2, name: "Hair Trigger", effect: "+7.50 Accuracy on the first turn", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] }
       ],
-      "Mount": [
+      Mount: [
         { tier: 1, name: "Bipod", effect: "+1.75 Accuracy, -30% Dexterity", weapons: ["Machine Gun", "Rifle", "Heavy Artillery"] },
         { tier: 2, name: "Tripod", effect: "+2.00 Accuracy, -30% Dexterity", weapons: ["Machine Gun", "Rifle", "Heavy Artillery"] }
       ],
-      "Grip": [
+      Grip: [
         { tier: 1, name: "Custom Grip", effect: "+0.75 Accuracy", weapons: ["Machine Gun", "Pistol", "Rifle", "Shotgun", "SMG"] }
       ],
-      "Choke": [
+      Choke: [
         { tier: 1, name: "Skeet Choke", effect: "+6% Damage", weapons: ["Shotgun"] },
         { tier: 2, name: "Improved Choke", effect: "+8% Damage", weapons: ["Shotgun"] },
         { tier: 3, name: "Full Choke", effect: "+10% Damage", weapons: ["Shotgun"] }
       ],
-      "Recoil Pad": [
+      RecoilPad: [
         { tier: 1, name: "Recoil Pad", effect: "25% ammo conservation", weapons: ["Machine Gun", "Rifle", "Shotgun"] }
       ],
-      "Brake": [
+      Brake: [
         { tier: 1, name: "Standard Brake", effect: "+1.00 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
         { tier: 2, name: "Heavy Duty Brake", effect: "+1.25 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] },
         { tier: 3, name: "Tactical Brake", effect: "+1.50 Accuracy, -3 Stealth", weapons: ["Machine Gun", "Pistol", "Rifle", "SMG"] }
       ],
-      "Light": [
+      Light: [
         { tier: 1, name: "Small Light", effect: "-3.00 Opponent Accuracy, -2 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] },
         { tier: 2, name: "Precision Light", effect: "-4.00 Opponent Accuracy, -2.5 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] },
         { tier: 3, name: "Tactical Illuminator", effect: "-5.00 Opponent Accuracy, -3 Opponent Stealth", weapons: ["Pistol", "Rifle", "Shotgun", "SMG", "Mechanical"] }
@@ -158,71 +155,6 @@
     };
 
     let cooldown = false;
-
-    async function loadData() {
-      if (cooldown) return;
-
-      const btn = document.getElementById("loadBtn");
-      cooldown = true;
-
-      let t = 60;
-      btn.disabled = true;
-      btn.innerText = `Wait ${t}s`;
-
-      const timer = setInterval(() => {
-        t--;
-        btn.innerText = t >= 0 ? `Wait ${t}s` : "Load";
-        if (t < 0) {
-          clearInterval(timer);
-          btn.disabled = false;
-          cooldown = false;
-        }
-      }, 1000);
-
-      const key = document.getElementById("apiKey").value.trim();
-      const id = document.getElementById("userId").value.trim();
-      const status = document.getElementById("status");
-      const itemsDiv = document.getElementById("items");
-
-      status.innerText = "Loading equipment...";
-      itemsDiv.innerHTML = "";
-
-      try {
-        const eq = await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r => r.json());
-        const ammo = await fetch(`https://api.torn.com/user/${id}?selections=ammo&key=${key}`).then(r => r.json());
-
-        status.innerText = "Fetching details...";
-
-        for (let item of (eq.equipment || [])) {
-          if (!["Primary", "Secondary", "Melee", "Defensive", "Temporary"].includes(item.type)) continue;
-
-          const detailResp = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r => r.json());
-          const details = detailResp.itemdetails || detailResp;
-
-          let matchedAmmo = null;
-          if (ammo && ammo.ammo) {
-            for (let a of ammo.ammo) {
-              if (!a.equipped) continue;
-              for (let type in ammoMap) {
-                if (ammoMap[type].includes(item.name) && a.size === type) {
-                  matchedAmmo = a;
-                  break;
-                }
-              }
-              if (matchedAmmo) break;
-            }
-          }
-
-          renderItem(details, matchedAmmo, item);
-          await new Promise(r => setTimeout(r, 250));
-        }
-
-        status.innerText = "Done ✅";
-      } catch (e) {
-        console.error(e);
-        status.innerText = "Error loading data";
-      }
-    }
 
     function isDualWeapon(name) {
       return typeof name === "string" && name.toLowerCase().includes("dual");
@@ -232,101 +164,23 @@
       return ["Ithaca 37", "Blunderbuss", "Homemade Pocket Shotgun", "Nock Gun", "Magnum", "S&W Revolver"].includes(name);
     }
 
-    function buildModOptions(category, weaponName) {
-      const list = modData[category] || [];
-      let filtered = list.filter(mod => mod.weapons.includes(weaponTypes[weaponName] || ""));
-
-      if (isDualWeapon(weaponName)) {
-        filtered = filtered.filter(mod => mod.name !== "Extended Mags" && mod.name !== "High Capacity Mags");
-      }
-
-      if (isNoMagWeapon(weaponName)) {
-        filtered = filtered.filter(mod => !["Extended Mags", "High Capacity Mags", "Extra Mag", "Extra Mags x2"].includes(mod.name));
-      }
-
-      return filtered;
+    function getAvailableCategories(weaponType) {
+      return Object.keys(modData).filter(cat => modData[cat].some(m => m.weapons.includes(weaponType)));
     }
 
-    function getModCategoriesForWeapon(weaponType) {
-      const categories = [];
-      for (const cat in modData) {
-        if ((modData[cat] || []).some(m => m.weapons.includes(weaponType))) {
-          categories.push(cat);
-        }
-      }
-      return categories;
-    }
+    function getModsForCategory(category, weaponName) {
+      const weaponType = weaponTypes[weaponName];
+      let mods = (modData[category] || []).filter(m => m.weapons.includes(weaponType));
 
-    function renderItem(item, ammo, sourceItem) {
-      const div = document.createElement("div");
-      div.className = "item";
-
-      let html = `<b>${item.name || sourceItem.name}</b><br>`;
-      html += `${item.type || sourceItem.type}<br>`;
-
-      if (item.damage !== undefined) html += `<span class="label">DMG:</span> ${item.damage}<br>`;
-      if (item.accuracy !== undefined) html += `<span class="label">ACC:</span> ${item.accuracy}<br>`;
-      if (item.armor !== undefined) html += `<span class="label">DEF:</span> ${item.armor}<br>`;
-      if (item.quality !== undefined) html += `<span class="label">Quality:</span> ${item.quality}<br>`;
-
-      if (ammo && sourceItem.type !== "Defensive") {
-        html += `<div class="ammo">${ammo.size} (${ammo.type})</div>`;
+      if (isDualWeapon(weaponName) && category === "ExtendedMag") {
+        mods = [];
       }
 
-      const weaponType = weaponTypes[sourceItem.name];
-      if (["Primary", "Secondary"].includes(sourceItem.type) && weaponType) {
-        const categories = getModCategoriesForWeapon(weaponType);
-
-        if (categories.length) {
-          html += `<div class="mod-group"><div class="mod-title">Mods</div>`;
-
-          for (const category of categories) {
-            const mods = buildModOptions(category, sourceItem.name);
-            if (!mods.length) continue;
-
-            html += `<div class="small">${category}</div>`;
-            html += `<select onchange="updateMod(this, '${sourceItem.name}')">`;
-            html += `<option value="">Select ${category}</option>`;
-
-            mods.forEach((m, idx) => {
-              const value = JSON.stringify({ category, index: idx });
-              html += `<option value='${escapeHtml(value)}'>Tier ${m.tier} — ${m.name}</option>`;
-            });
-
-            html += `</select>`;
-            html += `<div class="mod"></div>`;
-          }
-
-          html += `</div>`;
-        }
+      if (isNoMagWeapon(weaponName) && ["ExtendedMag", "ExtraMag"].includes(category)) {
+        mods = [];
       }
 
-      div.innerHTML = html;
-      document.getElementById("items").appendChild(div);
-
-      const selects = div.querySelectorAll("select");
-      selects.forEach(sel => {
-        const modDiv = sel.nextElementSibling;
-        const categoryTitle = sel.previousElementSibling && sel.previousElementSibling.classList.contains("small")
-          ? sel.previousElementSibling.innerText
-          : "";
-
-        sel.addEventListener("change", () => {
-          const val = sel.value;
-          if (!val) {
-            modDiv.innerHTML = "";
-            return;
-          }
-          const parsed = JSON.parse(val);
-          const category = categoryTitle;
-          const mods = buildModOptions(category, sourceItem.name);
-          const mod = mods[parsed.index];
-          modDiv.innerHTML = mod ? `${mod.name}: ${mod.effect}` : "";
-          if (isDualWeapon(sourceItem.name) && mod) {
-            modDiv.innerHTML += `<div class="warning">Dual weapon: bonus may be halved.</div>`;
-          }
-        });
-      });
+      return mods;
     }
 
     function escapeHtml(str) {
@@ -338,41 +192,161 @@
         .replaceAll(">", "&gt;");
     }
 
-    function updateMod(el, weaponName) {
-      const box = el.nextElementSibling;
-      if (!el.value) {
-        box.innerHTML = "";
-        return;
-      }
+    async function loadData() {
+      if (cooldown) return;
 
-      let parsed;
+      const btn = document.getElementById("loadBtn");
+      const status = document.getElementById("status");
+      const itemsDiv = document.getElementById("items");
+      const key = document.getElementById("apiKey").value.trim();
+      const id = document.getElementById("userId").value.trim();
+
+      cooldown = true;
+      btn.disabled = true;
+
+      let t = 60;
+      btn.innerText = `Wait ${t}s`;
+      const timer = setInterval(() => {
+        t--;
+        if (t >= 0) btn.innerText = `Wait ${t}s`;
+        if (t < 0) {
+          clearInterval(timer);
+          btn.innerText = "Load";
+          btn.disabled = false;
+          cooldown = false;
+        }
+      }, 1000);
+
+      status.innerText = "Loading equipment...";
+      itemsDiv.innerHTML = "";
+
       try {
-        parsed = JSON.parse(el.value);
-      } catch {
-        box.innerHTML = "";
-        return;
+        const eq = await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r => r.json());
+        const ammo = await fetch(`https://api.torn.com/user/${id}?selections=ammo&key=${key}`).then(r => r.json());
+
+        status.innerText = "Fetching details...";
+
+        for (const item of (eq.equipment || [])) {
+          if (!["Primary", "Secondary", "Melee", "Defensive", "Temporary"].includes(item.type)) continue;
+
+          const detailResp = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r => r.json());
+          const details = detailResp.itemdetails || detailResp;
+
+          let matchedAmmo = null;
+          if (ammo && ammo.ammo) {
+            for (const a of ammo.ammo) {
+              if (!a.equipped) continue;
+              for (const type in ammoMap) {
+                if (ammoMap[type].includes(item.name) && a.size === type) {
+                  matchedAmmo = a;
+                  break;
+                }
+              }
+              if (matchedAmmo) break;
+            }
+          }
+
+          renderItem(details, matchedAmmo, item);
+          await new Promise(r => setTimeout(r, 200));
+        }
+
+        status.innerText = "Done ✅";
+      } catch (e) {
+        console.error(e);
+        status.innerText = "Error loading data";
+      }
+    }
+
+    function renderItem(item, ammo, sourceItem) {
+      const div = document.createElement("div");
+      div.className = "item";
+
+      const displayName = item.name || sourceItem.name;
+      const displayType = item.type || sourceItem.type;
+      const weaponType = weaponTypes[sourceItem.name];
+
+      let html = `<b>${displayName}</b><br>${displayType}<br>`;
+
+      if (item.damage !== undefined) html += `<span class="label">DMG:</span> ${item.damage}<br>`;
+      if (item.accuracy !== undefined) html += `<span class="label">ACC:</span> ${item.accuracy}<br>`;
+      if (item.armor !== undefined) html += `<span class="label">DEF:</span> ${item.armor}<br>`;
+      if (item.quality !== undefined) html += `<span class="label">Quality:</span> ${item.quality}<br>`;
+
+      if (ammo && sourceItem.type !== "Defensive") {
+        html += `<div class="ammo">${ammo.size} (${ammo.type})</div>`;
       }
 
-      const categories = Object.keys(modData);
-      const category = categories.find(c => c === el.previousElementSibling?.innerText) || null;
-      if (!category) {
-        box.innerHTML = "";
-        return;
+      if (["Primary", "Secondary"].includes(sourceItem.type) && weaponType) {
+        const categories = getAvailableCategories(weaponType);
+        if (categories.length) {
+          html += `<div class="section"><div class="section-title">Mods</div>`;
+
+          for (const category of categories) {
+            const mods = getModsForCategory(category, sourceItem.name);
+            if (!mods.length) continue;
+
+            html += `<div class="small">${prettyCategory(category)}</div>`;
+            html += `<select class="mod-select" data-category="${escapeHtml(category)}" data-weapon="${escapeHtml(sourceItem.name)}">`;
+            html += `<option value="">Select ${prettyCategory(category)}</option>`;
+
+            mods.forEach((m, idx) => {
+              const value = escapeHtml(JSON.stringify({ index: idx }));
+              html += `<option value="${value}">Tier ${m.tier} — ${m.name}</option>`;
+            });
+
+            html += `</select>`;
+            html += `<div class="mod-text"></div>`;
+          }
+
+          html += `</div>`;
+        }
       }
 
-      const mods = buildModOptions(category, weaponName);
-      const mod = mods[parsed.index];
+      div.innerHTML = html;
+      document.getElementById("items").appendChild(div);
 
-      if (!mod) {
-        box.innerHTML = "";
-        return;
-      }
+      div.querySelectorAll(".mod-select").forEach(sel => {
+        sel.addEventListener("change", () => {
+          const box = sel.nextElementSibling;
+          if (!sel.value) {
+            box.innerHTML = "";
+            return;
+          }
 
-      let text = `${mod.name}: ${mod.effect}`;
-      if (isDualWeapon(weaponName)) {
-        text += `<div class="warning">Dual weapon: bonus may be halved.</div>`;
-      }
-      box.innerHTML = text;
+          let parsed;
+          try {
+            parsed = JSON.parse(sel.value);
+          } catch {
+            box.innerHTML = "";
+            return;
+          }
+
+          const category = sel.dataset.category;
+          const weaponName = sel.dataset.weapon;
+          const mods = getModsForCategory(category, weaponName);
+          const mod = mods[parsed.index];
+
+          if (!mod) {
+            box.innerHTML = "";
+            return;
+          }
+
+          let text = `${mod.name}: ${mod.effect}`;
+          if (isDualWeapon(weaponName)) {
+            text += `<div class="warning">Dual weapon: bonus may be halved.</div>`;
+          }
+          box.innerHTML = text;
+        });
+      });
+    }
+
+    function prettyCategory(category) {
+      const map = {
+        ExtendedMag: "Extended Magazines",
+        ExtraMag: "Extra Magazines",
+        RecoilPad: "Recoil Pads"
+      };
+      return map[category] || category + "s";
     }
 
     function downloadImage() {
