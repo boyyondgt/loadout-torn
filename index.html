@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Torn Loadout (V3.2)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Torn Loadout (V3.3)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -41,6 +41,7 @@
     }
     .label { color: #facc15; }
     .ammo { color: #f472b6; margin-top: 4px; }
+    .bonus { color: #4ade80; font-size: 12px; margin-top: 4px; }
     .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
     .warning { color: #f87171; font-size: 11px; margin-top: 4px; }
     .mod-section {
@@ -56,10 +57,10 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.2)</h1>
+  <h1>Torn Loadout (V3.3)</h1>
 
-  <input id="apiKey" placeholder="API Key">
-  <input id="userId" placeholder="User ID">
+  <input id="apiKey" placeholder="API Key" />
+  <input id="userId" placeholder="User ID" />
 
   <button id="loadBtn" onclick="loadData()">Load</button>
   <button onclick="downloadImage()">📸 Screenshot</button>
@@ -138,9 +139,10 @@
         for(const item of (eq.equipment||[])){
           if(!allowedTypes.includes(item.type)) continue;
 
-          const detail=await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r=>r.json());
-          let matchedAmmo=null;
+          const detailResp=await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r=>r.json());
+          const details=detailResp.itemdetails || detailResp;
 
+          let matchedAmmo=null;
           if(ammo && ammo.ammo){
             for(const a of ammo.ammo){
               if(!a.equipped) continue;
@@ -153,7 +155,7 @@
             }
           }
 
-          renderItem(detail.itemdetails, matchedAmmo);
+          renderItem(details, matchedAmmo);
           await new Promise(r=>setTimeout(r,300));
         }
 
@@ -169,16 +171,26 @@
       const div=document.createElement("div");
       div.className="item";
       let html=`<b>${item.name}</b><br>${item.type}<br>`;
-      if(item.damage) html+=`<span class='label'>DMG:</span> ${item.damage}<br>`;
-      if(item.accuracy) html+=`<span class='label'>ACC:</span> ${item.accuracy}<br>`;
-      if(item.armor) html+=`<span class='label'>DEF:</span> ${item.armor}<br>`;
-      if(item.quality!==undefined) html+=`<span class='label'>Quality:</span> ${item.quality}<br>`;
-      if(ammo) html+=`<div class='ammo'>${ammo.size} (${ammo.type})</div>`;
+
+      if(item.damage) html+=`<span class="label">DMG:</span> ${item.damage}<br>`;
+      if(item.accuracy) html+=`<span class="label">ACC:</span> ${item.accuracy}<br>`;
+      if(item.armor) html+=`<span class="label">DEF:</span> ${item.armor}<br>`;
+      if(item.quality!==undefined) html+=`<span class="label">Quality:</span> ${item.quality}<br>`;
+
+      if(item.bonuses){
+        const bonusList = Object.values(item.bonuses);
+        if(bonusList.length){
+          const b = bonusList[0];
+          html += `<div class="bonus"><b>Bonus:</b> ${b.bonus}<br>${b.description} (${b.value}%)</div>`;
+        }
+      }
+
+      if(ammo) html+=`<div class="ammo">${ammo.size} (${ammo.type})</div>`;
 
       if(["Primary","Secondary"].includes(item.type)){
-        const type=weaponTypes[item.name];
-        if(type && allowedMods[type]){
-          const mods=filterMods(item.name,allowedMods[type]);
+        const wType=weaponTypes[item.name];
+        if(wType && allowedMods[wType]){
+          const mods=filterMods(item.name,allowedMods[wType]);
           html+=`<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
           for(let i=0;i<2;i++){
             html+=`<select class="mod-select" onchange="updateMod(this)">
