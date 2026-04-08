@@ -366,11 +366,11 @@
       const wn    = item.name;
       const wType = weaponTypes[wn];
 
-      if (noModWeapons.includes(wn)) {
+            if (noModWeapons.includes(wn)) {
         // no mod section at all
-      } else if (["Primary", "Secondary"].includes(item.type) && wType) {
+      } else if (["Primary", "Secondary"].includes(item.type) && wType !== undefined) {
         html += `<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
-
+              
         for (let i = 0; i < 2; i++) {
           html += `<select class="mod-select" onchange="updateMod(this)">
             <option value="">Select mod</option>`;
