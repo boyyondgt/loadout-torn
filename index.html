@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (V3.7)</title>
+  <title>Torn Loadout (V3.8)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -26,6 +26,9 @@
       background: #3b82f6;
       color: white;
       cursor: pointer;
+    }
+    #controls {
+      margin-bottom: 12px;
     }
     .item {
       background: #1e293b;
@@ -52,16 +55,20 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.7)</h1>
+  <h1>Torn Loadout (V3.8)</h1>
 
-  <input id="apiKey" placeholder="API Key" />
-  <input id="userId" placeholder="User ID" />
+  <div id="controls">
+    <input id="apiKey" placeholder="API Key" />
+    <input id="userId" placeholder="User ID" />
+    <button id="loadBtn" onclick="loadData()">Load</button>
+  </div>
 
-  <button id="loadBtn" onclick="loadData()">Load</button>
-  <button onclick="downloadImage()">📸 Screenshot</button>
+  <button id="screenshotBtn" onclick="downloadImage()">📸 Screenshot (loadout only)</button>
 
   <p id="status"></p>
-  <div id="items"></div>
+  <div id="loadout-main">
+    <div id="items"></div>
+  </div>
 
   <script>
     const allowedTypes = ["Primary", "Secondary", "Melee", "Defensive", "Temporary"];
@@ -289,7 +296,8 @@
     }
 
     function downloadImage(){
-      html2canvas(document.body).then(canvas=>{
+      const el = document.getElementById("loadout-main");
+      html2canvas(el).then(canvas=>{
         const link=document.createElement("a");
         link.download="loadout.png";
         link.href=canvas.toDataURL("image/png");
