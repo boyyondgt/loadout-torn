@@ -1,190 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Torn Loadout Viewer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torn Loadout (Hardcore)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            padding: 15px;
-        }
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-        h1 { text-align: center; }
+<style>
+body {
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    padding: 8px;
+}
 
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            border-radius: 10px;
-            border: none;
-        }
+h1 { text-align:center; }
 
-        button {
-            background: #3b82f6;
-            color: white;
-        }
+input, button, select {
+    width:100%;
+    padding:8px;
+    margin-top:6px;
+    border-radius:8px;
+    border:none;
+}
 
-        .item {
-            background: #1e293b;
-            padding: 15px;
-            margin-top: 12px;
-            border-radius: 12px;
-        }
+button {
+    background:#3b82f6;
+    color:white;
+}
 
-        .type { color: #60a5fa; font-weight: bold; }
-        .bonus { color: #34d399; }
-        .label { font-weight: bold; color: #facc15; }
-        .ammo { color: #f472b6; }
-    </style>
-</head>
-<body>
+.item {
+    background:#1e293b;
+    padding:8px;
+    margin-top:8px;
+    border-radius:8px;
+    font-size:13px;
+}
 
-<h1>Torn Loadout Viewer</h1>
-
-<input id="apiKey" placeholder="API Key">
-<input id="userId" placeholder="User ID">
-<button onclick="loadData()">Load Equipment</button>
-
-<p id="status"></p>
-<div id="items"></div>
-
-<script>
-// 🔥 Allowed equipment types
-const allowedTypes = ["Primary", "Secondary", "Melee", "Defensive", "Temporary"];
-
-// 🔥 Ammo → Weapon mapping (your data)
-const ammoMap = {
-    "12 Gauge Cartridge": ["Benelli M1 Tactical","Benelli M4 Super","Blunderbuss","Homemade Pocket Shotgun","Ithaca 37","Jackhammer","Mag 7","Nock Gun","Sawed-Off Shotgun"],
-    "9mm Parabellum Round": ["9mm Uzi","BT MP9","Beretta 92FS","Beretta M9","Dual 92G Berettas","Dual MP5s","Dual TMPs","Dual Uzis","Glock 17","Luger","MP 40","MP5 Navy","MP5k","Pink Mac-10","Qsz-92","Skorpion","TMP","Taurus","USP"],
-    ".45 ACP Round": ["Cobra Derringer","Springfield 1911","Thompson"],
-    "7.62mm Rifle Round": ["AK-47","Gold Plated AK-47","PKM","Rheinmetall MG 3","SKS Carbine"],
-    "5.56mm Rifle Round": ["ArmaLite M-15A4","Bushmaster Carbon 15","Dual Bushmasters","Enfield SA-80","Heckler & Koch SL8","M16 A2 Rifle","M249 SAW","M4A1 Colt Carbine","Minigun","Negev NG-5","Neutrilux 2000","Prototype","SIG 550","SIG 552","Steyr AUG","Stoner 96","Tavor TAR-21","Vektor CR-21","XM8 Rifle"],
-    "5.7mm High Vel. Round": ["Dual P90s","Fiveseven","P90","Ruger 57"],
-    "5.45mm Rifle Round": ["AK74U"],
-    ".25 ACP Round": ["Raven MP25"],
-    ".44 Special Round": ["Desert Eagle","Magnum","S&W M29","S&W Revolver"],
-    ".380 ACP Round": ["Beretta Pico","Lorcin 380"],
-    "Warhead": ["SMAW Launcher","Type 98 Anti Tank"],
-    "Snow Ball": ["Snow Cannon"],
-    "Flare": ["Flare Gun"],
-    "Stone": ["Slingshot"],
-    "Bolt": ["Crossbow","Harpoon"],
-    "Dart": ["Blowgun","Tranquilizer Gun"],
-    "Liter of Fuel": ["Flamethrower"],
-    "RPG": ["RPG Launcher"],
-    "40mm Grenade": ["China Lake","Milkor MGL"],
-    "Taser Cartridge": ["Taser"],
-    "Egg": ["Egg Propelled Launcher"]
-};
-
-// 🧠 Cache
-let cache = {};
-
-async function loadData() {
-    const apiKey = document.getElementById("apiKey").value;
-    const userId = document.getElementById("userId").value;
-    const status = document.getElementById("status");
-    const container = document.getElementById("items");
-
-    container.innerHTML = "";
-    status.innerText = "Loading...";
-
-    const cacheKey = apiKey + "-" + userId;
-
-    // ✅ Cache check
-    if (cache[cacheKey] && Date.now() - cache[cacheKey].time < 60000) {
-        status.innerText = "Loaded from cache";
-        displayItems(cache[cacheKey].data.items, cache[cacheKey].data.ammo);
-        return;
-    }
-
-    try {
-        // 🔹 Equipment
-        const eqRes = await fetch(`https://api.torn.com/user/${userId}?selections=equipment&key=${apiKey}`);
-        const eqData = await eqRes.json();
-
-        // 🔹 Ammo
-        const ammoRes = await fetch(`https://api.torn.com/user/${userId}?selections=ammo&key=${apiKey}`);
-        const ammoData = await ammoRes.json();
-
-        const filtered = eqData.equipment.filter(item =>
-            allowedTypes.includes(item.type)
-        );
-
-        const detailedItems = [];
-
-        // 🔹 Get item details
-        for (const item of filtered) {
-            const detailRes = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${apiKey}`);
-            const detailData = await detailRes.json();
-
-            detailedItems.push(detailData.itemdetails);
-
-            // ⏱️ Delay
-            await new Promise(r => setTimeout(r, 400));
-        }
-
-        // 🔥 Equipped ammo list
-        const equippedAmmoList = ammoData.ammo.filter(a => a.equipped === 1);
-
-        // Save cache
-        cache[cacheKey] = {
-            data: { items: detailedItems, ammo: equippedAmmoList },
-            time: Date.now()
-        };
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Torn Loadout Builder</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            padding: 8px;
-        }
-
-        h1 { text-align: center; font-size: 20px; }
-
-        input, button, select {
-            width: 100%;
-            padding: 8px;
-            margin-top: 6px;
-            border-radius: 8px;
-            border: none;
-            font-size: 14px;
-        }
-
-        button {
-            background: #3b82f6;
-            color: white;
-        }
-
-        #loadout {
-            background: #020617;
-            padding: 8px;
-            border-radius: 10px;
-        }
-
-        .item {
-            background: #1e293b;
-            padding: 8px;
-            margin-top: 8px;
-            border-radius: 8px;
-            font-size: 13px;
-        }
-
-        .label { color: #facc15; }
-        .ammo { color: #f472b6; }
-        .mod { color: #38bdf8; font-size: 12px; }
-    </style>
+.label { color:#facc15; }
+.ammo { color:#f472b6; }
+.mod { color:#38bdf8; font-size:12px; }
+.warning { color:#f87171; font-size:11px; }
+</style>
 </head>
 
 <body>
@@ -193,78 +50,139 @@ async function loadData() {
 
 <input id="apiKey" placeholder="API Key">
 <input id="userId" placeholder="User ID">
-<button onclick="loadData()">Load</button>
+
+<button id="loadBtn" onclick="loadData()">Load</button>
 <button onclick="downloadImage()">📸 Screenshot</button>
 
 <p id="status"></p>
-
-<div id="loadout">
-    <div id="items"></div>
-</div>
+<div id="items"></div>
 
 <script>
 
-// 🔫 Weapon Types (your list)
+// 🔫 FULL WEAPON MAP
 const weaponTypes = {
-    "9mm Uzi":"SMG","AK-47":"Rifle","AK74U":"SMG","ArmaLite M-15A4":"Rifle",
-    "Benelli M1 Tactical":"Shotgun","Benelli M4 Super":"Shotgun",
-    "M249 SAW":"Machine Gun","Minigun":"Machine Gun",
-    "P90":"SMG","MP5 Navy":"SMG",
-    "Beretta 92FS":"Pistol","Glock 17":"Pistol","USP":"Pistol"
-    // (rest still works, fallback = Other)
+
+"9mm Uzi":"SMG","AK74U":"SMG","Bushmaster Carbon 15":"SMG","Dual Bushmasters":"SMG",
+"Dual MP5s":"SMG","Dual P90s":"SMG","Dual TMPs":"SMG","Dual Uzis":"SMG",
+"MP 40":"SMG","MP5 Navy":"SMG","P90":"SMG","Thompson":"SMG",
+"MP5k":"SMG","Pink Mac-10":"SMG","Skorpion":"SMG","TMP":"SMG","BT MP9":"SMG",
+
+"AK-47":"Rifle","ArmaLite M-15A4":"Rifle","Enfield SA-80":"Rifle",
+"Gold Plated AK-47":"Rifle","Heckler & Koch SL8":"Rifle","M16 A2 Rifle":"Rifle",
+"M4A1 Colt Carbine":"Rifle","SIG 550":"Rifle","SIG 552":"Rifle",
+"SKS Carbine":"Rifle","Steyr AUG":"Rifle","Tavor TAR-21":"Rifle",
+"Vektor CR-21":"Rifle","XM8 Rifle":"Rifle",
+
+"M249 SAW":"Machine Gun","Minigun":"Machine Gun","Negev NG-5":"Machine Gun",
+"Neutrilux 2000":"Machine Gun","PKM":"Machine Gun","Prototype":"Machine Gun",
+"Rheinmetall MG 3":"Machine Gun","Stoner 96":"Machine Gun",
+
+"Benelli M1 Tactical":"Shotgun","Benelli M4 Super":"Shotgun","Ithaca 37":"Shotgun",
+"Jackhammer":"Shotgun","Mag 7":"Shotgun","Nock Gun":"Shotgun",
+"Sawed-Off Shotgun":"Shotgun","Blunderbuss":"Shotgun","Homemade Pocket Shotgun":"Shotgun",
+
+"Beretta 92FS":"Pistol","Beretta M9":"Pistol","Beretta Pico":"Pistol",
+"Cobra Derringer":"Pistol","Desert Eagle":"Pistol","Dual 92G Berettas":"Pistol",
+"Fiveseven":"Pistol","Flare Gun":"Pistol","Glock 17":"Pistol",
+"Lorcin 380":"Pistol","Luger":"Pistol","Magnum":"Pistol",
+"Qsz-92":"Pistol","Raven MP25":"Pistol","Ruger 57":"Pistol",
+"S&W M29":"Pistol","S&W Revolver":"Pistol","Springfield 1911":"Pistol",
+"Taurus":"Pistol","USP":"Pistol",
+
+"Egg Propelled Launcher":"Heavy Artillery","Snow Cannon":"Heavy Artillery",
+"Type 98 Anti Tank":"Heavy Artillery","China Lake":"Heavy Artillery",
+"Flamethrower":"Heavy Artillery","Milkor MGL":"Heavy Artillery",
+"RPG Launcher":"Heavy Artillery","SMAW Launcher":"Heavy Artillery"
 };
 
-// 🔥 FULL MATRIX (FIXED)
+// 🔧 MATRIX
 const allowedMods = {
-    "Heavy Artillery": ["Laser","Pod","Extra Clip"],
-    "Machine Gun": ["Sight","Laser","Extended Mag","Trigger","Brake","Pod","Extra Clip","Recoil Pad","Grip"],
-    "Pistol": ["Sight","Suppressor","Laser","Flashlight","Extended Mag","Trigger","Brake","Extra Clip","Grip"],
-    "Rifle": ["Sight","Suppressor","Laser","Flashlight","Extended Mag","Trigger","Brake","Pod","Extra Clip","Recoil Pad","Grip"],
-    "Shotgun": ["Laser","Flashlight","Choke","Extended Mag","Trigger","Extra Clip","Recoil Pad","Grip"],
-    "SMG": ["Sight","Suppressor","Laser","Flashlight","Extended Mag","Trigger","Brake","Extra Clip","Grip"]
+"Machine Gun":["Sight","Laser","Extended Mag","Trigger","Brake","Pod","Extra Clip","Recoil Pad","Grip"],
+"Pistol":["Sight","Suppressor","Laser","Flashlight","Extended Mag","Trigger","Brake","Extra Clip","Grip"],
+"Rifle":["Sight","Suppressor","Laser","Flashlight","Extended Mag","Trigger","Brake","Pod","Extra Clip","Recoil Pad","Grip"],
+"Shotgun":["Laser","Flashlight","Choke","Trigger","Extra Clip","Recoil Pad","Grip"],
+"SMG":["Sight","Suppressor","Laser","Flashlight","Extended Mag","Trigger","Brake","Extra Clip","Grip"],
+"Heavy Artillery":["Laser","Pod","Extra Clip"]
 };
 
-// 🔧 MOD DATA (cleaned + expanded)
-const mods = {
-    Sight: ["+1 → +1.75 Accuracy"],
-    Laser: ["+2% → +5% Crit"],
-    Suppressor: ["+Stealth, -Damage"],
-    Flashlight: ["-Enemy Accuracy & Stealth"],
-    ExtendedMag: ["+20% / +30% Clip"],
-    "Extended Mag": ["+20% / +30% Clip"],
-    Trigger: ["+5 → +7.5 Accuracy (Turn1)"],
-    Brake: ["+Accuracy, -Stealth"],
-    Grip: ["+0.75 Accuracy"],
-    Choke: ["+6% → +10% Damage"],
-    "Extra Clip": ["+1 / +2 mags"],
-    "Recoil Pad": ["Ammo efficiency"],
-    Pod: ["+Accuracy, -Dexterity"]
+// 🚫 SPECIAL RESTRICTIONS
+function filterMods(itemName, category, modsList) {
+
+    let filtered = [...modsList];
+
+    const isDual = itemName.toLowerCase().includes("dual");
+    const isRevolver = ["Magnum","S&W Revolver","S&W M29"].includes(itemName);
+    const noMagShotguns = ["Ithaca 37","Nock Gun","Homemade Pocket Shotgun","Blunderbuss"];
+
+    if (isDual) {
+        filtered = filtered.filter(m => m !== "Extended Mag");
+    }
+
+    if (isRevolver) {
+        filtered = filtered.filter(m => m !== "Extended Mag");
+    }
+
+    if (noMagShotguns.includes(itemName)) {
+        filtered = filtered.filter(m => m !== "Extended Mag");
+    }
+
+    return { mods: filtered, isDual };
+}
+
+// 🔧 MOD EFFECTS
+const modStats = {
+    Sight:"+Accuracy",
+    Laser:"+Crit",
+    Suppressor:"+Stealth -DMG",
+    Flashlight:"-Enemy ACC",
+    "Extended Mag":"+Mag Size",
+    Trigger:"+Turn1 ACC",
+    Brake:"+ACC -Stealth",
+    Grip:"+Accuracy",
+    Choke:"+Damage",
+    "Extra Clip":"+Mags",
+    "Recoil Pad":"Ammo Save",
+    Pod:"+ACC -DEX"
 };
 
-let cache = {};
+let cooldown = false;
 
+// 🚀 LOAD
 async function loadData() {
+
+    if (cooldown) return;
+
+    const btn = document.getElementById("loadBtn");
+    cooldown = true;
+
+    let t = 60;
+    btn.disabled = true;
+
+    let timer = setInterval(()=>{
+        btn.innerText = `Wait ${t}s`;
+        t--;
+        if (t < 0) {
+            clearInterval(timer);
+            btn.innerText = "Load";
+            btn.disabled = false;
+            cooldown = false;
+        }
+    },1000);
+
     const key = apiKey.value;
     const id = userId.value;
 
-    status.innerText = "Loading...";
+    status.innerText = "Loading equipment...";
     items.innerHTML = "";
 
-    const cacheKey = key + id;
-
-    if (cache[cacheKey]) {
-        display(cache[cacheKey]);
-        status.innerText = "Cache";
-        return;
-    }
-
     try {
+
         const eq = await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r=>r.json());
         const ammo = await fetch(`https://api.torn.com/user/${id}?selections=ammo&key=${key}`).then(r=>r.json());
 
         const equippedAmmo = ammo.ammo.find(a=>a.equipped===1);
 
-        let final = [];
+        status.innerText = "Fetching details...";
 
         for (let item of eq.equipment) {
 
@@ -272,77 +190,83 @@ async function loadData() {
 
             const detail = await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r=>r.json());
 
-            final.push({
-                ...detail.itemdetails,
-                ammo: equippedAmmo
-            });
+            renderItem(detail.itemdetails, equippedAmmo);
 
             await new Promise(r=>setTimeout(r,400));
         }
 
-        cache[cacheKey] = final;
-        display(final);
-
-        status.innerText = "Done";
+        status.innerText = "Done ✅";
 
     } catch(e) {
         status.innerText = "Error";
-        console.error(e);
     }
 }
 
-function display(data) {
+// 🎯 RENDER
+function renderItem(item, ammo) {
 
-    data.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
 
-        const div = document.createElement("div");
-        div.className = "item";
+    let html = `<b>${item.name}</b><br>${item.type}<br>`;
 
-        let html = `<b>${item.name}</b><br>${item.type}<br>`;
+    if (item.damage) html += `<span class="label">DMG:</span> ${item.damage}<br>`;
+    if (item.accuracy) html += `<span class="label">ACC:</span> ${item.accuracy}<br>`;
+    if (item.armor) html += `<span class="label">DEF:</span> ${item.armor}<br>`;
 
-        if (item.damage) html += `<span class="label">DMG:</span> ${item.damage}<br>`;
-        if (item.accuracy) html += `<span class="label">ACC:</span> ${item.accuracy}<br>`;
-        if (item.armor) html += `<span class="label">DEF:</span> ${item.armor}<br>`;
+    if (ammo && item.type !== "Defensive") {
+        html += `<div class="ammo">${ammo.size} (${ammo.type})</div>`;
+    }
 
-        if (item.ammo && item.type !== "Defensive") {
-            html += `<div class="ammo">${item.ammo.size} (${item.ammo.type})</div>`;
-        }
+    // 🔧 Mods
+    if (["Primary","Secondary"].includes(item.type)) {
 
-        // 🔧 Mods
-        if (["Primary","Secondary"].includes(item.type)) {
+        const category = weaponTypes[item.name];
 
-            const category = weaponTypes[item.name] || "SMG"; // fallback
-            const modTypes = allowedMods[category] || [];
+        if (category && allowedMods[category]) {
 
-            html += `<div><b>Mods:</b></div>`;
+            const {mods, isDual} = filterMods(item.name, category, allowedMods[category]);
+
+            html += `<b>Mods:</b>`;
+
+            if (isDual) {
+                html += `<div class="warning">Dual weapon → half mod effect</div>`;
+            }
 
             for (let i=0;i<2;i++) {
-                html += `<select onchange="updateMod(this)">
+                html += `
+                <select onchange="updateMod(this, ${isDual})">
                     <option value="">Select Mod</option>
-                    ${modTypes.map(m=>`<option>${m}</option>`).join("")}
+                    ${mods.map(m=>`<option>${m}</option>`).join("")}
                 </select>
-                <div class="mod"></div>`;
+                <div class="mod"></div>
+                `;
             }
         }
+    }
 
-        div.innerHTML = html;
-        items.appendChild(div);
-    });
+    div.innerHTML = html;
+    items.appendChild(div);
 }
 
-// 🔧 Show mod effects
-function updateMod(el) {
+// 🔧 MOD DISPLAY
+function updateMod(el, isDual) {
+
     const type = el.value;
     const box = el.nextElementSibling;
 
-    if (!type) return box.innerHTML="";
+    if (!type) return box.innerHTML = "";
 
-    box.innerHTML = (mods[type] || ["Unknown"]).map(m=>`<div>${m}</div>`).join("");
+    let effect = modStats[type] || "";
+
+    if (isDual) effect += " (½ effect)";
+
+    box.innerHTML = effect;
 }
 
-// 📸 Screenshot
+// 📸 SCREENSHOT
 function downloadImage() {
-    html2canvas(document.getElementById("loadout")).then(canvas=>{
+    html2canvas(document.body).then(canvas=>{
         let link = document.createElement("a");
         link.download = "loadout.png";
         link.href = canvas.toDataURL();
@@ -350,71 +274,6 @@ function downloadImage() {
     });
 }
 
-</script>
-
-</body>
-</html>
-
-        status.innerText = "Loaded from API";
-        displayItems(detailedItems, equippedAmmoList);
-
-    } catch (err) {
-        status.innerText = "Error loading data";
-        console.error(err);
-    }
-}
-
-function displayItems(items, ammoList) {
-    const container = document.getElementById("items");
-
-    items.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "item";
-
-        let statsHTML = "";
-        let bonusesHTML = "";
-        let ammoHTML = "";
-
-        // 🔫 Weapons
-        if (["Primary", "Secondary"].includes(item.type)) {
-            statsHTML = `
-                <p><span class="label">Damage:</span> ${item.damage ?? "N/A"}</p>
-                <p><span class="label">Accuracy:</span> ${item.accuracy ?? "N/A"}</p>
-            `;
-
-            let matchedAmmo = ammoList.find(a => {
-                const weapons = ammoMap[a.size];
-                return weapons && weapons.includes(item.name);
-            });
-
-            if (matchedAmmo) {
-                ammoHTML = `
-                    <p class="ammo">
-                        <span class="label">Ammo:</span>
-                        ${matchedAmmo.size} (${matchedAmmo.type})
-porary Item</p>`;
-        }
-
-        // 🎯 Bonuses
-        if (item.bonuses) {
-            for (const key in item.bonuses) {
-                const b = item.bonuses[key];
-                bonusesHTML += `<p class="bonus">${b.bonus}: ${b.description}</p>`;
-            }
-        }
-
-        div.innerHTML = `
-            <h2>${item.name}</h2>
-            <p class="type">${item.type}</p>
-            ${statsHTML}
-            ${ammoHTML}
-            <p><span class="label">Quality:</span> ${item.quality}</p>
-            ${bonusesHTML}
-        `;
-
-        container.appendChild(div);
-    });
-}
 </script>
 
 </body>
