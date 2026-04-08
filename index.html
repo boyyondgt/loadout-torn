@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Torn Loadout (V3.1)</title>
+  <title>Torn Loadout (V3.2)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -41,12 +41,22 @@
     }
     .label { color: #facc15; }
     .ammo { color: #f472b6; margin-top: 4px; }
-    .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; }
-    .warning { color: #f87171; font-size: 11px; }
+    .mod-text { color: #38bdf8; font-size: 12px; margin-top: 4px; white-space: pre-wrap; }
+    .warning { color: #f87171; font-size: 11px; margin-top: 4px; }
+    .mod-section {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .mod-title {
+      color: #facc15;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
-  <h1>Torn Loadout (V3.1)</h1>
+  <h1>Torn Loadout (V3.2)</h1>
 
   <input id="apiKey" placeholder="API Key">
   <input id="userId" placeholder="User ID">
@@ -58,6 +68,8 @@
   <div id="items"></div>
 
   <script>
+    const allowedTypes = ["Primary", "Secondary", "Melee", "Defensive", "Temporary"];
+
     const weaponTypes = {
       "9mm Uzi":"SMG","AK74U":"SMG","P90":"SMG","MP5 Navy":"SMG","MP5k":"SMG",
       "Skorpion":"SMG","TMP":"SMG","BT MP9":"SMG",
@@ -80,6 +92,15 @@
       "Liter of Fuel":["Flamethrower"]
     };
 
+    const allowedMods = {
+      "Machine Gun":["Sight","Laser","Extended Mag","Trigger","Brake","Grip"],
+      "Pistol":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
+      "Rifle":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
+      "Shotgun":["Laser","Choke","Trigger","Grip"],
+      "SMG":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
+      "Heavy Artillery":["Laser"]
+    };
+
     const modStats = {
       Sight:"+Accuracy",
       Laser:"+Crit",
@@ -89,15 +110,6 @@
       Grip:"+Accuracy",
       Choke:"+Damage",
       Brake:"+Accuracy -Stealth"
-    };
-
-    const allowedMods = {
-      "Machine Gun":["Sight","Laser","Extended Mag","Trigger","Brake","Grip"],
-      "Pistol":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
-      "Rifle":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
-      "Shotgun":["Laser","Choke","Trigger","Grip"],
-      "SMG":["Sight","Suppressor","Laser","Extended Mag","Trigger","Grip"],
-      "Heavy Artillery":["Laser"]
     };
 
     function filterMods(itemName, modsList){
@@ -118,32 +130,42 @@
       btn.disabled=true;
       status.innerText="Loading...";
       itemsDiv.innerHTML="";
+
       try{
         const eq=await fetch(`https://api.torn.com/user/${id}?selections=equipment&key=${key}`).then(r=>r.json());
         const ammo=await fetch(`https://api.torn.com/user/${id}?selections=ammo&key=${key}`).then(r=>r.json());
+
         for(const item of (eq.equipment||[])){
+          if(!allowedTypes.includes(item.type)) continue;
+
           const detail=await fetch(`https://api.torn.com/torn/${item.UID}?selections=itemdetails&key=${key}`).then(r=>r.json());
           let matchedAmmo=null;
+
           if(ammo && ammo.ammo){
             for(const a of ammo.ammo){
               if(!a.equipped) continue;
               for(const type in ammoMap){
                 if(ammoMap[type].includes(item.name)&&a.size===type){
-                  matchedAmmo=a;break;
+                  matchedAmmo=a; break;
                 }
               }
-              if(matchedAmmo)break;
+              if(matchedAmmo) break;
             }
           }
-          renderItem(detail.itemdetails,matchedAmmo);
+
+          renderItem(detail.itemdetails, matchedAmmo);
           await new Promise(r=>setTimeout(r,300));
         }
+
         status.innerText="Done ✅";
-      }catch(e){ status.innerText="Error"; console.error(e); }
+      }catch(e){
+        console.error(e);
+        status.innerText="Error loading data.";
+      }
       btn.disabled=false;
     }
 
-    function renderItem(item,ammo){
+    function renderItem(item, ammo){
       const div=document.createElement("div");
       div.className="item";
       let html=`<b>${item.name}</b><br>${item.type}<br>`;
@@ -154,17 +176,18 @@
       if(ammo) html+=`<div class='ammo'>${ammo.size} (${ammo.type})</div>`;
 
       if(["Primary","Secondary"].includes(item.type)){
-        const category=weaponTypes[item.name];
-        if(category && allowedMods[category]){
-          const mods=filterMods(item.name,allowedMods[category]);
-          html+=`<b>Mods:</b>`;
+        const type=weaponTypes[item.name];
+        if(type && allowedMods[type]){
+          const mods=filterMods(item.name,allowedMods[type]);
+          html+=`<div class="mod-section"><div class="mod-title">Mods (2 slots)</div>`;
           for(let i=0;i<2;i++){
-            html+=`<select onchange="updateMod(this)">
+            html+=`<select class="mod-select" onchange="updateMod(this)">
               <option value="">Select Mod</option>
               ${mods.map(m=>`<option>${m}</option>`).join("")}
             </select>
             <div class="mod-text"></div>`;
           }
+          html+=`</div>`;
         }
       }
 
@@ -173,16 +196,16 @@
     }
 
     function updateMod(el){
-      const type=el.value;
+      const val=el.value;
       const box=el.nextElementSibling;
-      box.innerHTML=modStats[type]||"";
+      box.innerHTML=modStats[val]||"";
     }
 
     function downloadImage(){
       html2canvas(document.body).then(canvas=>{
         const link=document.createElement("a");
         link.download="loadout.png";
-        link.href=canvas.toDataURL();
+        link.href=canvas.toDataURL("image/png");
         link.click();
       });
     }
