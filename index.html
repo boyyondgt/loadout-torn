@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Torn Loadout (Final v3)</title>
+  <title>Torn Loadout (V4)</title>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     body {
@@ -56,7 +56,7 @@
   </style>
 </head>
 <body>
-  <h1>Torn Loadout</h1>
+  <h1>Torn Loadout (V4)</h1>
 
   <input id="apiKey" placeholder="API Key" />
   <input id="userId" placeholder="User ID" />
@@ -277,6 +277,16 @@
       if (item.armor !== undefined) html += `<span class="label">DEF:</span> ${item.armor}<br>`;
       if (item.quality !== undefined) html += `<span class="label">Quality:</span> ${item.quality}<br>`;
 
+      // BONUS (from itemdetails.bonuses)
+      if (item.bonuses) {
+        const bEntries = Object.values(item.bonuses);
+        if (bEntries.length > 0) {
+          const bonus = bEntries[0];  // assume one bonus per item
+          html += `<span class="label">Bonus:</span> ${bonus.bonus}<br>`;
+          html += `<span class="label">Effect:</span> ${bonus.description} (${bonus.value}%)<br>`;
+        }
+      }
+
       if (ammo && sourceItem.type !== "Defensive") {
         html += `<div class="ammo">${ammo.size} (${ammo.type})</div>`;
       }
@@ -328,29 +338,3 @@
           const index = parsed.index;
           const mods = modData[category] || [];
           const mod = mods[index];
-
-          if (!mod) {
-            box.innerHTML = "";
-            return;
-          }
-
-          let text = `${mod.name} (${category}): ${mod.effect}`;
-          if (isDualWeapon(weaponName)) {
-            text += `<div class="warning">Dual weapon: bonus may be halved.</div>`;
-          }
-          box.innerHTML = text;
-        });
-      });
-    }
-
-    function downloadImage() {
-      html2canvas(document.body).then(canvas => {
-        const link = document.createElement("a");
-        link.download = "loadout.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      });
-    }
-  </script>
-</body>
-</html>
